@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+package auth;
+
+option go_package = "crypto_analyzer_auth_service/gen/go/auth";
+
+import "google/api/annotations.proto";
+import "google/api/http.proto";
+
+message RegisterRequest {
+  string username = 1;
+  string email = 2;
+  string password = 3;
+}
+
+message RegisterResponse {
+  string token = 1;
+  string refresh_token = 2;
+}
+
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  string token = 1;
+  string refresh_token = 2;
+}
+
+message RefreshRequest {
+  string refresh_token = 1;
+}
+
+message RefreshResponse {
+  string token = 1;
+  string refresh_token = 2;
+}
+
+message VerifyRequest {}
+
+message VerifyResponse {
+  string user_id = 1;
+  string email = 2;
+  string username = 3;
+}
+
+service AuthService {
+  rpc Register(RegisterRequest) returns (RegisterResponse){
+    option (google.api.http) = {
+      post: "/auth/register"
+      body: "*"
+    };
+  }
+
+  rpc Login(LoginRequest) returns (LoginResponse) {
+    option (google.api.http) = {
+      post: "/auth/login"
+      body: "*"
+    };
+  }
+
+  rpc Refresh(RefreshRequest) returns (RegisterResponse) {
+    option (google.api.http) = {
+      post: "/auth/refresh"
+      body: "*"
+    };
+  }
+
+  rpc Verify(VerifyRequest) returns (VerifyResponse) {
+    option (google.api.http) = {
+      post: "/auth/verify"
+      body: "*"
+    };
+  }
+}
+
