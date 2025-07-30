@@ -7,7 +7,6 @@
 package auth
 
 import (
-	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -137,7 +136,8 @@ func (x *RegisterResponse) GetRefreshToken() string {
 type LoginRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
-	Password      string                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
+	Username      string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
+	Password      string                 `protobuf:"bytes,3,opt,name=password,proto3" json:"password,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -175,6 +175,13 @@ func (*LoginRequest) Descriptor() ([]byte, []int) {
 func (x *LoginRequest) GetEmail() string {
 	if x != nil {
 		return x.Email
+	}
+	return ""
+}
+
+func (x *LoginRequest) GetUsername() string {
+	if x != nil {
+		return x.Username
 	}
 	return ""
 }
@@ -435,17 +442,18 @@ var File_auth_proto protoreflect.FileDescriptor
 const file_auth_proto_rawDesc = "" +
 	"\n" +
 	"\n" +
-	"auth.proto\x12\x04auth\x1a\x1cgoogle/api/annotations.proto\x1a\x15google/api/http.proto\"_\n" +
+	"auth.proto\x12\x04auth\"_\n" +
 	"\x0fRegisterRequest\x12\x1a\n" +
 	"\busername\x18\x01 \x01(\tR\busername\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x12\x1a\n" +
 	"\bpassword\x18\x03 \x01(\tR\bpassword\"M\n" +
 	"\x10RegisterResponse\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x12#\n" +
-	"\rrefresh_token\x18\x02 \x01(\tR\frefreshToken\"@\n" +
+	"\rrefresh_token\x18\x02 \x01(\tR\frefreshToken\"\\\n" +
 	"\fLoginRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1a\n" +
-	"\bpassword\x18\x02 \x01(\tR\bpassword\"J\n" +
+	"\busername\x18\x02 \x01(\tR\busername\x12\x1a\n" +
+	"\bpassword\x18\x03 \x01(\tR\bpassword\"J\n" +
 	"\rLoginResponse\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x12#\n" +
 	"\rrefresh_token\x18\x02 \x01(\tR\frefreshToken\"5\n" +
@@ -458,12 +466,12 @@ const file_auth_proto_rawDesc = "" +
 	"\x0eVerifyResponse\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x12\x1a\n" +
-	"\busername\x18\x03 \x01(\tR\busername2\xce\x02\n" +
-	"\vAuthService\x12T\n" +
-	"\bRegister\x12\x15.auth.RegisterRequest\x1a\x16.auth.RegisterResponse\"\x19\x82\xd3\xe4\x93\x02\x13:\x01*\"\x0e/auth/register\x12H\n" +
-	"\x05Login\x12\x12.auth.LoginRequest\x1a\x13.auth.LoginResponse\"\x16\x82\xd3\xe4\x93\x02\x10:\x01*\"\v/auth/login\x12Q\n" +
-	"\aRefresh\x12\x14.auth.RefreshRequest\x1a\x16.auth.RegisterResponse\"\x18\x82\xd3\xe4\x93\x02\x12:\x01*\"\r/auth/refresh\x12L\n" +
-	"\x06Verify\x12\x13.auth.VerifyRequest\x1a\x14.auth.VerifyResponse\"\x17\x82\xd3\xe4\x93\x02\x11:\x01*\"\f/auth/verifyB*Z(crypto_analyzer_auth_service/gen/go/authb\x06proto3"
+	"\busername\x18\x03 \x01(\tR\busername2\xe7\x01\n" +
+	"\vAuthService\x129\n" +
+	"\bRegister\x12\x15.auth.RegisterRequest\x1a\x16.auth.RegisterResponse\x120\n" +
+	"\x05Login\x12\x12.auth.LoginRequest\x1a\x13.auth.LoginResponse\x126\n" +
+	"\aRefresh\x12\x14.auth.RefreshRequest\x1a\x15.auth.RefreshResponse\x123\n" +
+	"\x06Verify\x12\x13.auth.VerifyRequest\x1a\x14.auth.VerifyResponseB*Z(crypto_analyzer_auth_service/gen/go/authb\x06proto3"
 
 var (
 	file_auth_proto_rawDescOnce sync.Once
@@ -495,7 +503,7 @@ var file_auth_proto_depIdxs = []int32{
 	6, // 3: auth.AuthService.Verify:input_type -> auth.VerifyRequest
 	1, // 4: auth.AuthService.Register:output_type -> auth.RegisterResponse
 	3, // 5: auth.AuthService.Login:output_type -> auth.LoginResponse
-	1, // 6: auth.AuthService.Refresh:output_type -> auth.RegisterResponse
+	5, // 6: auth.AuthService.Refresh:output_type -> auth.RefreshResponse
 	7, // 7: auth.AuthService.Verify:output_type -> auth.VerifyResponse
 	4, // [4:8] is the sub-list for method output_type
 	0, // [0:4] is the sub-list for method input_type

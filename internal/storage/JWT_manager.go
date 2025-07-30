@@ -3,6 +3,7 @@ package storage
 import (
 	"crypto/rand"
 	"crypto_analyzer_auth_service/internal/config"
+	"crypto_analyzer_auth_service/internal/domain"
 	"crypto_analyzer_auth_service/internal/interfaces"
 	"encoding/base64"
 	"errors"
@@ -26,11 +27,13 @@ func NewJWTManager(cfg *config.JWTConfig) *JWTManager {
 	}
 }
 
-func (j *JWTManager) GenerateAccessToken(userID string) (string, error) {
+func (j *JWTManager) GenerateAccessToken(userID, username, email string) (string, error) {
 	claims := jwt.MapClaims{
-		"user_id": userID,
-		"exp":     time.Now().Add(j.accessTokenTTL).Unix(),
-		"iat":     time.Now().Unix(),
+		"user_id":  userID,
+		"username": username,
+		"email":    email,
+		"exp":      time.Now().Add(j.accessTokenTTL).Unix(),
+		"iat":      time.Now().Unix(),
 	}
 
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -47,7 +50,7 @@ func (j *JWTManager) GenerateRefreshToken() (string, error) {
 	return base64.URLEncoding.EncodeToString(byteSlice), nil
 }
 
-func (j *JWTManager) ParseAccessToken(tokenStr string) (string, error) {
+func (j *JWTManager) ParseAccessToken(tokenStr string) (*domain.User, error) {
 	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
@@ -56,20 +59,36 @@ func (j *JWTManager) ParseAccessToken(tokenStr string) (string, error) {
 	})
 
 	if err != nil || !token.Valid {
-		return "", errors.New("access token is invalid")
+		return nil, errors.New("access token is invalid")
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return "", errors.New("invalid claims")
+		return nil, errors.New("invalid claims")
 	}
 
 	userID, ok := claims["user_id"].(string)
 	if !ok {
-		return "", errors.New("user_id is not found in access token")
+		return nil, errors.New("user_id is not found in access token")
 	}
 
-	return userID, nil
+	username, ok := claims["username"].(string)
+	if !ok {
+		return nil, errors.New("username is not found in access token")
+	}
+
+	email, ok := claims["email"].(string)
+	if !ok {
+		return nil, errors.New("email is not found in access token")
+	}
+
+	user := &domain.User{
+		ID:       userID,
+		Username: username,
+		Email:    email,
+	}
+
+	return user, nil
 }
 
 /*

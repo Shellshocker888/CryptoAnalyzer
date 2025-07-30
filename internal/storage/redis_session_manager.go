@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto_analyzer_auth_service/internal/config"
 	"crypto_analyzer_auth_service/internal/interfaces"
+	"errors"
 	"fmt"
 	"github.com/redis/go-redis/v9"
 	"time"
@@ -42,34 +43,42 @@ func NewSessionManager(cfg *config.RedisConfig, client *redis.Client) *SessionMa
 }
 
 func (s *SessionManager) SaveRefreshToken(ctx context.Context, userID, refreshToken string) error {
-	key := fmt.Sprintf("%s:%s:%s", s.prefix, userID, refreshToken)
-	return s.client.Set(ctx, key, 1, s.expiration).Err()
+	key := fmt.Sprintf("%s:%s", s.prefix, refreshToken)
+	return s.client.Set(ctx, key, userID, s.expiration).Err()
+}
+
+func (s *SessionManager) GetUserIDByRefreshToken(ctx context.Context, refreshToken string) (string, error) {
+	key := fmt.Sprintf("%s:%s", s.prefix, refreshToken)
+	userID, err := s.client.Get(ctx, key).Result()
+	if errors.Is(err, redis.Nil) {
+		return "", errors.New("refresh token not found")
+	}
+	if err != nil {
+		return "", fmt.Errorf("failed to get userID by refresh token: %w", err)
+	}
+	return userID, nil
 }
 
 func (s *SessionManager) IsRefreshTokenValid(ctx context.Context, userID, refreshToken string) (bool, error) {
-	key := fmt.Sprintf("%s:%s:%s", s.prefix, userID, refreshToken)
-	result, err := s.client.Exists(ctx, key).Result()
-	if err != nil {
-		return false, fmt.Errorf("failed to check resreshToken: %s", err)
+	key := fmt.Sprintf("%s:%s", s.prefix, refreshToken)
+	storedUserID, err := s.client.Get(ctx, key).Result()
+
+	if errors.Is(err, redis.Nil) {
+		// Токен не найден — он либо не существует, либо истёк
+		return false, nil
 	}
 
-	return result == 1, nil
+	if err != nil {
+		return false, fmt.Errorf("failed to get refresh token: %w", err)
+	}
+
+	return storedUserID == userID, nil
 }
 
-func (s *SessionManager) DeleteRefreshToken(ctx context.Context, userID, refreshToken string) error {
-	key := fmt.Sprintf("%s:%s:%s", s.prefix, userID, refreshToken)
-	err := s.client.Del(ctx, key).Err()
-	if err != nil {
-		return fmt.Errorf("failed to delete resreshToken: %s", err)
+func (s *SessionManager) DeleteRefreshToken(ctx context.Context, refreshToken string) error {
+	key := fmt.Sprintf("%s:%s", s.prefix, refreshToken)
+	if err := s.client.Del(ctx, key).Err(); err != nil {
+		return fmt.Errorf("failed to delete refresh token: %w", err)
 	}
-
 	return nil
 }
-
-/*
-type SessionManager interface {
-	SaveRefreshToken(ctx context.Context, userID, refreshToken string) error
-	RefreshTokenValid(ctx context.Context, userID, refreshToken string) (bool, error)
-	DeleteRefreshToken(ctx context.Context, userID, refreshToken string) error
-}
-*/

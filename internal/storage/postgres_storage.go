@@ -13,7 +13,7 @@ import (
 var _ interfaces.UsersStorage = (*UserPostgresStorage)(nil)
 
 type UserPostgresStorage struct {
-	db *sql.DB
+	DB *sql.DB
 }
 
 func NewUserStorage(db *sql.DB) (*UserPostgresStorage, error) {
@@ -30,7 +30,7 @@ func NewUserStorage(db *sql.DB) (*UserPostgresStorage, error) {
 		return nil, fmt.Errorf("error creating new user storage: %w", err)
 	}
 
-	return &UserPostgresStorage{db: db}, nil
+	return &UserPostgresStorage{DB: db}, nil
 }
 
 func (s *UserPostgresStorage) CreateUser(ctx context.Context, user *domain.User) error {
@@ -40,7 +40,7 @@ VALUES ($1, $2, $3, $4, $5)`
 	if user.CreatedAt.IsZero() {
 		user.CreatedAt = time.Now()
 	}
-	_, err := s.db.ExecContext(ctx, query, user.ID, user.Username, user.Email, user.PasswordHash, user.CreatedAt)
+	_, err := s.DB.ExecContext(ctx, query, user.ID, user.Username, user.Email, user.PasswordHash, user.CreatedAt)
 	if err != nil {
 		return fmt.Errorf("failed to create user: %w", err)
 	}
@@ -48,10 +48,20 @@ VALUES ($1, $2, $3, $4, $5)`
 	return nil
 }
 
-func (s *UserPostgresStorage) GetUserByEmail(ctx context.Context, email string) (*domain.User, error) {
-	query := `SELECT uuid, username, email, password_hash, created_at FROM users WHERE email = $1`
+func (s *UserPostgresStorage) GetUserByUsernameEmail(ctx context.Context, username, email string) (*domain.User, error) {
+	var field, target string
 
-	row := s.db.QueryRowContext(ctx, query, email)
+	if username != "" {
+		field = "username"
+		target = username
+	} else if email != "" {
+		field = "email"
+		target = email
+	}
+
+	query := fmt.Sprintf("SELECT uuid, username, email, password_hash, created_at FROM users WHERE %s = $1", field)
+
+	row := s.DB.QueryRowContext(ctx, query, target)
 
 	var user domain.User
 	err := row.Scan(
@@ -67,7 +77,34 @@ func (s *UserPostgresStorage) GetUserByEmail(ctx context.Context, email string) 
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to get user by email: %w", err)
+		return nil, fmt.Errorf("failed to get user: %w", err)
+	}
+
+	return &user, nil
+}
+
+func (s *UserPostgresStorage) GetUserByUserID(ctx context.Context, userID string) (*domain.User, error) {
+
+	if userID == "" {
+		return nil, errors.New("userID is empty")
+	}
+
+	query := `SELECT username, email FROM users WHERE uuid = $1`
+
+	row := s.DB.QueryRowContext(ctx, query, userID)
+
+	var user domain.User
+	err := row.Scan(
+		&user.Username,
+		&user.Email,
+	)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
 
 	return &user, nil
@@ -76,7 +113,7 @@ func (s *UserPostgresStorage) GetUserByEmail(ctx context.Context, email string) 
 func (s *UserPostgresStorage) EmailExists(ctx context.Context, email string) (bool, error) {
 	query := `SELECT 1 FROM users WHERE email = $1 LIMIT 1`
 
-	row := s.db.QueryRowContext(ctx, query, email)
+	row := s.DB.QueryRowContext(ctx, query, email)
 
 	var result int
 	err := row.Scan(&result)
@@ -95,7 +132,7 @@ func (s *UserPostgresStorage) EmailExists(ctx context.Context, email string) (bo
 func (s *UserPostgresStorage) UsernameExists(ctx context.Context, username string) (bool, error) {
 	query := `SELECT 1 FROM users WHERE username = $1 LIMIT 1`
 
-	row := s.db.QueryRowContext(ctx, query, username)
+	row := s.DB.QueryRowContext(ctx, query, username)
 
 	var result int
 	err := row.Scan(&result)

@@ -5,16 +5,14 @@ import (
 	pb "crypto_analyzer_auth_service/gen/go"
 	"crypto_analyzer_auth_service/internal/config"
 	"crypto_analyzer_auth_service/internal/handler"
+	"crypto_analyzer_auth_service/internal/logger"
 	"crypto_analyzer_auth_service/internal/service"
 	"crypto_analyzer_auth_service/internal/storage"
 	"database/sql"
 	"fmt"
-	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	_ "github.com/lib/pq"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"net"
-	"net/http"
 	"os"
 	"time"
 )
@@ -42,10 +40,17 @@ func initPostgres(cfg *config.PostgresConfig) (*sql.DB, error) {
 }
 
 func main() {
+	err := logger.InitLogger()
+	if err != nil {
+		fmt.Printf("failed to init logger: %v", err)
+		os.Exit(1)
+	}
+	defer logger.SyncLogger()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	err := config.LoadConfig()
+	err = config.LoadConfig()
 	if err != nil {
 		fmt.Printf("failed to load config: %v", err)
 		os.Exit(1)
@@ -92,7 +97,7 @@ func main() {
 	userJWTManager := storage.NewJWTManager(cfgJWT)
 
 	authService := service.NewService(userStorage, userSessionManager, userJWTManager)
-	authHandler := handler.NewAuthHandler(authService)
+	authHandler := handler.NewAuthHandler(authService, logger.Log)
 
 	grpcServer := grpc.NewServer()
 	pb.RegisterAuthServiceServer(grpcServer, authHandler)
@@ -103,30 +108,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	go func() {
-		err = grpcServer.Serve(listener50051)
-		if err != nil {
-			fmt.Printf("failed to start grpc server with listener: %v", err)
-			os.Exit(1)
-		}
-	}()
+	err = grpcServer.Serve(listener50051)
+	if err != nil {
+		fmt.Printf("failed to start grpc server with listener: %v", err)
+		os.Exit(1)
+	}
 
-	go func() {
-		mux := runtime.NewServeMux()
-
-		opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-		err = pb.RegisterAuthServiceHandlerFromEndpoint(context.Background(), mux, "localhost:50051", opts)
-		if err != nil {
-			fmt.Printf("failed to register grpc gateway: %w", err)
-			os.Exit(1)
-		}
-
-		err = http.ListenAndServe(":8080", mux)
-		if err != nil {
-			fmt.Printf("failed to start http server: %w", err)
-			os.Exit(1)
-		}
-	}()
-
-	select {}
 }

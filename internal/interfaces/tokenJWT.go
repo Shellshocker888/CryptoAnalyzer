@@ -1,7 +1,9 @@
 package interfaces
 
+import "crypto_analyzer_auth_service/internal/domain"
+
 type JWTManager interface {
-	GenerateAccessToken(userID string) (string, error)
+	GenerateAccessToken(userID, username, email string) (string, error)
 	GenerateRefreshToken() (string, error)
-	ParseAccessToken(token string) (string, error) // возвращает userID
+	ParseAccessToken(tokenStr string) (*domain.User, error) // возвращает userID
 }
