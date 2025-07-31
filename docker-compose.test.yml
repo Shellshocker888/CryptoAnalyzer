@@ -1,0 +1,31 @@
+version: "3.8"
+
+name: crypto-analyzer-test
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: crypto-analyzer-postgres-test
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: Shellshocker
+      POSTGRES_PASSWORD: 123123123
+      POSTGRES_DB: CryptoAnalyzerTestDB
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg_test_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:latest
+    container_name: crypto-analyzer-redis-test
+    restart: unless-stopped
+    command: ["redis-server", "--requirepass", "123123123"]
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_test_data:/data
+
+volumes:
+  pg_test_data:
+  redis_test_data:

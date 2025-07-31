@@ -17,19 +17,6 @@ type UserPostgresStorage struct {
 }
 
 func NewUserStorage(db *sql.DB) (*UserPostgresStorage, error) {
-	query := `CREATE TABLE IF NOT EXISTS users (
-              id serial primary key,
-              uuid TEXT NOT NULL UNIQUE,
-              username VARCHAR(50) NOT NULL UNIQUE,
-              email VARCHAR(255) NOT NULL UNIQUE,
-              password_hash TEXT NOT NULL,
-    		  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);`
-
-	_, err := db.Exec(query)
-	if err != nil {
-		return nil, fmt.Errorf("error creating new user storage: %w", err)
-	}
-
 	return &UserPostgresStorage{DB: db}, nil
 }
 
