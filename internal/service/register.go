@@ -72,16 +72,17 @@ func (s *AuthService) Register(ctx context.Context, req *auth.RegisterRequest) (
 		return nil, errors.New("the email has been already taken")
 	}
 
-	exists, err = s.Storage.UsernameExists(ctx, req.Username)
+	/*exists, err = s.Storage.UsernameExists(ctx, req.Username)
 	if err != nil {
 		logger.Log.Error("failed to check username existence", zap.Error(err))
 		return nil, errors.New("failed to register user")
 	}
 	if exists {
 		return nil, errors.New("the username has been already taken")
-	}
+	}*/
 
-	passwordHash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	var passwordHash []byte
+	passwordHash, err = bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		logger.Log.Error("failed to generate password hash", zap.Error(err))
 		return nil, errors.New("failed to register user")
@@ -103,13 +104,15 @@ func (s *AuthService) Register(ctx context.Context, req *auth.RegisterRequest) (
 		return nil, errors.New("failed to register user")
 	}
 
-	accessToken, err := s.JWTManager.GenerateAccessToken(userID, req.Username, req.Email)
+	var accessToken string
+	accessToken, err = s.JWTManager.GenerateAccessToken(userID, req.Username, req.Email)
 	if err != nil {
 		logger.Log.Error("failed to generate access token", zap.Error(err))
 		return nil, errors.New("failed to register user")
 	}
 
-	refreshToken, err := s.JWTManager.GenerateRefreshToken()
+	var refreshToken string
+	refreshToken, err = s.JWTManager.GenerateRefreshToken()
 	if err != nil {
 		logger.Log.Error("failed to generate refresh token", zap.Error(err))
 		return nil, errors.New("failed to register user")

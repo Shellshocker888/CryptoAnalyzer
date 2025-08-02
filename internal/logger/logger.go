@@ -33,3 +33,18 @@ func InitLogger() error {
 func SyncLogger() {
 	_ = Log.Sync()
 }
+
+func InitTestLogger() error {
+	config := zap.NewDevelopmentConfig()
+	config.OutputPaths = []string{"stdout"}
+	config.Level = zap.NewAtomicLevelAt(zapcore.DebugLevel)
+
+	logger, err := config.Build()
+	if err != nil {
+		return fmt.Errorf("failed to initialize test logger: %w", err)
+	}
+
+	Log = logger
+
+	return nil
+}

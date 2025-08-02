@@ -67,17 +67,20 @@ func (j *JWTManager) ParseAccessToken(tokenStr string) (*domain.User, error) {
 		return nil, errors.New("invalid claims")
 	}
 
-	userID, ok := claims["user_id"].(string)
+	var userID string
+	userID, ok = claims["user_id"].(string)
 	if !ok {
 		return nil, errors.New("user_id is not found in access token")
 	}
 
-	username, ok := claims["username"].(string)
+	var username string
+	username, ok = claims["username"].(string)
 	if !ok {
 		return nil, errors.New("username is not found in access token")
 	}
 
-	email, ok := claims["email"].(string)
+	var email string
+	email, ok = claims["email"].(string)
 	if !ok {
 		return nil, errors.New("email is not found in access token")
 	}

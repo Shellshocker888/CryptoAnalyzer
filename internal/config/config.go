@@ -41,7 +41,13 @@ func getEnv(key string) (string, error) {
 }
 
 func LoadConfig() error {
-	err := godotenv.Load()
+	env := ".env"
+
+	if os.Getenv("APP_ENV") == "test" {
+		env = ".env.test"
+	}
+
+	err := godotenv.Load(env)
 	if err != nil {
 		return fmt.Errorf("failed to load env: %w", err)
 	}
@@ -57,6 +63,7 @@ func LoadPostgresConfig() (*PostgresConfig, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	cfg.Port, err = getEnv("DB_PORT")
 	if err != nil {
 		return nil, err
@@ -103,19 +110,22 @@ func LoadRedisConfig() (*RedisConfig, error) {
 		return nil, err
 	}
 
-	refreshExpirationString, err := getEnv("REDIS_REFRESH_EXPIRATION")
+	var refreshExpirationString string
+	refreshExpirationString, err = getEnv("REDIS_REFRESH_EXPIRATION")
 	if err != nil {
 		return nil, err
 	}
 
-	refreshExpiration, err := time.ParseDuration(refreshExpirationString)
+	var refreshExpiration time.Duration
+	refreshExpiration, err = time.ParseDuration(refreshExpirationString)
 	if err != nil {
 		return nil, err
 	}
 
 	cfg.RefreshExpiration = refreshExpiration
 
-	redisDBString, err := getEnv("REDIS_DB")
+	var redisDBString string
+	redisDBString, err = getEnv("REDIS_DB")
 	if err != nil {
 		return nil, err
 	}
@@ -138,19 +148,22 @@ func LoadJWTConfig() (*JWTConfig, error) {
 
 	cfg.SecretKey = []byte(secretKeyString)
 
-	accessTokenTTLString, err := getEnv("JWT_ACCESS_TOKEN_TTL")
+	var accessTokenTTLString string
+	accessTokenTTLString, err = getEnv("JWT_ACCESS_TOKEN_TTL")
 	if err != nil {
 		return nil, err
 	}
 
-	accessTokenTTLDuration, err := time.ParseDuration(accessTokenTTLString)
+	var accessTokenTTLDuration time.Duration
+	accessTokenTTLDuration, err = time.ParseDuration(accessTokenTTLString)
 	if err != nil {
 		return nil, err
 	}
 
 	cfg.AccessTokenTTL = accessTokenTTLDuration
 
-	refreshTokenBytesString, err := getEnv("JWT_REFRESH_TOKEN_BYTES")
+	var refreshTokenBytesString string
+	refreshTokenBytesString, err = getEnv("JWT_REFRESH_TOKEN_BYTES")
 	if err != nil {
 		return nil, err
 	}

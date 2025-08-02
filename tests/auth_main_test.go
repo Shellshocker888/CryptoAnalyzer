@@ -1,10 +1,8 @@
-package main
+package tests
 
 import (
 	"context"
-	pb "crypto_analyzer_auth_service/gen/go"
 	"crypto_analyzer_auth_service/internal/config"
-	"crypto_analyzer_auth_service/internal/handler"
 	"crypto_analyzer_auth_service/internal/logger"
 	"crypto_analyzer_auth_service/internal/service"
 	"crypto_analyzer_auth_service/internal/storage"
@@ -13,9 +11,18 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
-	"net"
+	"os"
+	"testing"
 	"time"
+)
+
+var (
+	DB                 *sql.DB
+	redisClient        *redis.Client
+	userStorage        *storage.UserPostgresStorage
+	userSessionManager *storage.SessionManager
+	userJWTManager     *storage.JWTManager
+	authService        *service.AuthService
 )
 
 func initPostgres(cfg *config.PostgresConfig) (*sql.DB, error) {
@@ -40,73 +47,74 @@ func initPostgres(cfg *config.PostgresConfig) (*sql.DB, error) {
 	return db, nil
 }
 
-func main() {
-	err := logger.InitLogger()
+func TestMain(m *testing.M) {
+	err := logger.InitTestLogger()
 	if err != nil {
-		zap.L().Fatal("failed to init logger", zap.Error(err))
+		fmt.Printf("failed to init logger: %v", err)
+		os.Exit(1)
 	}
 	defer logger.SyncLogger()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	if err = config.LoadConfig(); err != nil {
-		zap.L().Fatal("failed to load config", zap.Error(err))
+	err = os.Setenv("APP_ENV", "test")
+	if err != nil {
+		logger.Log.Error("Error loading test env", zap.Error(err))
+	}
+
+	err = config.LoadConfig()
+	if err != nil {
+		fmt.Printf("failed to load config: %v", err)
+		os.Exit(1)
 	}
 
 	var cfgPostgres *config.PostgresConfig
 	cfgPostgres, err = config.LoadPostgresConfig()
 	if err != nil {
-		zap.L().Fatal("failed to load postgres config", zap.Error(err))
+		fmt.Printf("failed to load postgres config: %v", err)
+		os.Exit(1)
 	}
 
-	var DB *sql.DB
 	DB, err = initPostgres(cfgPostgres)
 	if err != nil {
-		zap.L().Fatal("failed to init postgres DB", zap.Error(err))
+		fmt.Printf("failed to init postgres DB: %v", err)
+		os.Exit(1)
 	}
 	defer DB.Close()
 
 	var cfgRedis *config.RedisConfig
 	cfgRedis, err = config.LoadRedisConfig()
 	if err != nil {
-		zap.L().Fatal("failed to load redis config", zap.Error(err))
+		fmt.Printf("failed to load redis config: %v", err)
+		os.Exit(1)
 	}
 
-	var redisClient *redis.Client
 	redisClient, err = storage.InitRedisClient(ctx, cfgRedis)
 	if err != nil {
-		zap.L().Fatal("failed to init redis client", zap.Error(err))
+		fmt.Printf("failed to init redis client: %v", err)
+		os.Exit(1)
 	}
 
 	var cfgJWT *config.JWTConfig
 	cfgJWT, err = config.LoadJWTConfig()
 	if err != nil {
-		zap.L().Fatal("failed to load JWT config", zap.Error(err))
+		fmt.Printf("failed to load JWT config: %v", err)
+		os.Exit(1)
 	}
 
-	var userStorage *storage.UserPostgresStorage
 	userStorage, err = storage.NewUserStorage(DB)
 	if err != nil {
-		zap.L().Fatal("failed to init user storage", zap.Error(err))
+		fmt.Printf("failed to init user storage: %v", err)
+		os.Exit(1)
 	}
 
-	userSessionManager := storage.NewSessionManager(cfgRedis, redisClient)
-	userJWTManager := storage.NewJWTManager(cfgJWT)
+	userSessionManager = storage.NewSessionManager(cfgRedis, redisClient)
+	userJWTManager = storage.NewJWTManager(cfgJWT)
 
-	authService := service.NewService(userStorage, userSessionManager, userJWTManager)
-	authHandler := handler.NewAuthHandler(authService, logger.Log)
+	authService = service.NewService(userStorage, userSessionManager, userJWTManager)
 
-	grpcServer := grpc.NewServer()
-	pb.RegisterAuthServiceServer(grpcServer, authHandler)
-
-	var listener50051 net.Listener
-	listener50051, err = net.Listen("tcp", ":50051")
-	if err != nil {
-		zap.L().Fatal("failed to init listener for port 50051", zap.Error(err))
-	}
-
-	if err = grpcServer.Serve(listener50051); err != nil {
-		zap.L().Fatal("failed to start grpc server", zap.Error(err))
-	}
+	// Запускаем тесты
+	code := m.Run()
+	os.Exit(code)
 }

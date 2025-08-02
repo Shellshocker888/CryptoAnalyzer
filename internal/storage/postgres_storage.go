@@ -116,7 +116,7 @@ func (s *UserPostgresStorage) EmailExists(ctx context.Context, email string) (bo
 	return true, nil
 }
 
-func (s *UserPostgresStorage) UsernameExists(ctx context.Context, username string) (bool, error) {
+/*func (s *UserPostgresStorage) UsernameExists(ctx context.Context, username string) (bool, error) {
 	query := `SELECT 1 FROM users WHERE username = $1 LIMIT 1`
 
 	row := s.DB.QueryRowContext(ctx, query, username)
@@ -132,9 +132,4 @@ func (s *UserPostgresStorage) UsernameExists(ctx context.Context, username strin
 	}
 
 	return true, nil
-}
-
-/*CreateUser(ctx context.Context, user *domain.User) error
-GetUserByEmail(email string) (domain.User, error)
-EmailExists(email string) (bool, error)
-UsernameExists(username string) (bool, error)*/
+}*/
