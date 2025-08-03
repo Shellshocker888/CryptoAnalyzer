@@ -1,214 +1,237 @@
 package tests
 
 import (
-	"context"
 	"crypto_analyzer_auth_service/gen/go"
 	pb "crypto_analyzer_auth_service/gen/go"
-	"github.com/stretchr/testify/require"
+	"github.com/ozontech/allure-go/pkg/framework/provider"
+	"github.com/ozontech/allure-go/pkg/framework/runner"
 	"testing"
-	"time"
 )
 
-func TestRegisterWeakPassword(t *testing.T) {
-	username := "Shellshocker"
-	email := "newemail@gmail.com"
-	password := "123123123"
+func TestRegisterWeakPassword(tt *testing.T) {
+	ctx := newTestContext(tt)
 
-	ctx := newTestContext(t)
+	runner.Run(tt, "Register with weak password", func(t provider.T) {
+		t.WithNewStep("Weak password", func(sCtx provider.StepCtx) {
+			username := "Shellshocker"
+			email := "newemail@gmail.com"
+			password := "123123123"
 
-	cleanUserByEmail(ctx, t, email, "")
+			cleanUserByEmail(ctx, tt, email, "")
 
-	resp, err := authService.Register(ctx, &pb.RegisterRequest{
-		Username: username,
-		Email:    email,
-		Password: password,
-	})
-	if err == nil {
-		t.Cleanup(func() {
-			var refreshToken string
-			if resp != nil {
-				refreshToken = resp.RefreshToken
-			}
-			cleanUserByEmail(ctx, t, email, refreshToken)
+			resp, err := authService.Register(ctx, &pb.RegisterRequest{
+				Username: username,
+				Email:    email,
+				Password: password,
+			})
+			t.Cleanup(func() {
+				var refreshToken string
+				if resp != nil {
+					refreshToken = resp.RefreshToken
+				}
+				cleanUserByEmail(ctx, tt, email, refreshToken)
+			})
+
+			sCtx.Assert().Error(err, "Ошибка при слабом пароле")
+			sCtx.Assert().Nil(resp, "Response nil, так как регистрация неуспешна")
 		})
-	}
-
-	require.Error(t, err)
-	require.Nil(t, resp)
+	})
 }
 
-func TestRegisterStrongPasswordGoodEmail(t *testing.T) {
-	username := "Shellshocker25"
-	email := "newemail25@gmail.com"
-	password := "New12321_new"
+func TestRegisterStrongPasswordCorrectEmail(tt *testing.T) {
+	ctx := newTestContext(tt)
 
-	ctx := newTestContext(t)
-	cleanUserByEmail(ctx, t, email, "")
+	runner.Run(tt, "Register with strong password and correct email", func(t provider.T) {
+		t.WithNewStep("Strong password and correct email", func(sCtx provider.StepCtx) {
+			username := "Shellshocker25"
+			email := "newemail25@gmail.com"
+			password := "New12321_new"
 
-	resp, err := authService.Register(ctx, &pb.RegisterRequest{
-		Username: username,
-		Email:    email,
-		Password: password,
+			cleanUserByEmail(ctx, tt, email, "")
+
+			resp, err := authService.Register(ctx, &pb.RegisterRequest{
+				Username: username,
+				Email:    email,
+				Password: password,
+			})
+
+			t.Cleanup(func() {
+				var refreshToken string
+				if resp != nil {
+					refreshToken = resp.RefreshToken
+				}
+				cleanUserByEmail(ctx, tt, email, refreshToken)
+			})
+
+			sCtx.Assert().NoError(err, "Отсутствие ошибки при сильном пароле и корректном email")
+			sCtx.Assert().NotNil(resp, "Response не nil, регистрация успешна")
+			sCtx.Assert().NotEmpty(resp.Token, "Наличие access токена")
+			sCtx.Assert().NotEmpty(resp.RefreshToken, "Наличие refresh токена")
+		})
 	})
-
-	t.Cleanup(func() {
-		var refreshToken string
-		if resp != nil {
-			refreshToken = resp.RefreshToken
-		}
-		cleanUserByEmail(ctx, t, email, refreshToken)
-	})
-
-	require.NoError(t, err)
-	require.NotNil(t, resp)
-	require.NotEmpty(t, resp.Token)
-	require.NotEmpty(t, resp.RefreshToken)
 }
 
-func TestRegisterEmailExists(t *testing.T) {
-	username := "Shellshocker"
-	email := "newemail@gmail.com"
-	password := "New12321_new"
+func TestRegisterEmailExists(tt *testing.T) {
+	ctx := newTestContext(tt)
 
-	ctx := newTestContext(t)
-	cleanUserByEmail(ctx, t, email, "")
+	runner.Run(tt, "Register with email exists", func(t provider.T) {
+		t.WithNewStep("Email exists", func(sCtx provider.StepCtx) {
+			username := "Shellshocker"
+			email := "newemail@gmail.com"
+			password := "New12321_new"
 
-	resp, err := authService.Register(ctx, &pb.RegisterRequest{
-		Username: username,
-		Email:    email,
-		Password: password,
-	})
+			cleanUserByEmail(ctx, tt, email, "")
 
-	require.NoError(t, err)
-	require.NotEmpty(t, resp.Token)
-	require.NotEmpty(t, resp.RefreshToken)
+			resp, err := authService.Register(ctx, &pb.RegisterRequest{
+				Username: username,
+				Email:    email,
+				Password: password,
+			})
 
-	resp, err = authService.Register(ctx, &pb.RegisterRequest{
-		Username: username,
-		Email:    email,
-		Password: password,
-	})
-	if err == nil {
-		t.Cleanup(func() {
-			var refreshToken string
-			if resp != nil {
-				refreshToken = resp.RefreshToken
-			}
-			cleanUserByEmail(ctx, t, email, refreshToken)
+			sCtx.Assert().NoError(err, "Ошибки нет, регистрация успешна")
+			sCtx.Assert().NotEmpty(resp.Token, "Наличие access токена")
+			sCtx.Assert().NotEmpty(resp.RefreshToken, "Наличие refresh токена")
+
+			resp, err = authService.Register(ctx, &pb.RegisterRequest{
+				Username: username,
+				Email:    email,
+				Password: password,
+			})
+
+			t.Cleanup(func() {
+				var refreshToken string
+				if resp != nil {
+					refreshToken = resp.RefreshToken
+				}
+				cleanUserByEmail(ctx, tt, email, refreshToken)
+			})
+
+			sCtx.Assert().Error(err, "Ошибка, email уже существует")
+			sCtx.Assert().Nil(resp, "Response nil, регистрация неуспешна")
 		})
-	}
-
-	require.Error(t, err)
-	require.Nil(t, resp)
+	})
 }
 
-func TestRegisterWrongEmail(t *testing.T) {
-	username := "Shellshocker"
-	email := "newemailgmail.com"
-	password := "New12321_new"
+func TestRegisterWrongEmail(tt *testing.T) {
+	ctx := newTestContext(tt)
 
-	ctx := newTestContext(t)
-	cleanUserByEmail(ctx, t, email, "")
+	runner.Run(tt, "Register with email exists", func(t provider.T) {
+		t.WithNewStep("Email exists", func(sCtx provider.StepCtx) {
+			username := "Shellshocker"
+			email := "newemailgmail.com"
+			password := "New12321_new"
 
-	resp, err := authService.Register(ctx, &pb.RegisterRequest{
-		Username: username,
-		Email:    email,
-		Password: password,
-	})
-	if err == nil {
-		t.Cleanup(func() {
-			var refreshToken string
-			if resp != nil {
-				refreshToken = resp.RefreshToken
-			}
-			cleanUserByEmail(ctx, t, email, refreshToken)
+			cleanUserByEmail(ctx, tt, email, "")
+
+			resp, err := authService.Register(ctx, &pb.RegisterRequest{
+				Username: username,
+				Email:    email,
+				Password: password,
+			})
+
+			t.Cleanup(func() {
+				var refreshToken string
+				if resp != nil {
+					refreshToken = resp.RefreshToken
+				}
+				cleanUserByEmail(ctx, tt, email, refreshToken)
+			})
+
+			sCtx.Assert().Error(err, "Ошибка регистрации, email отсутствует")
+			sCtx.Assert().Nil(resp, "Response nil, регистрация неуспешна")
 		})
-	}
-
-	require.Error(t, err)
-	require.Nil(t, resp)
+	})
 }
 
-func TestRegisterNoUsername(t *testing.T) {
-	email := "newemail@gmail.com"
-	password := "New12321_new"
+func TestRegisterNoUsername(tt *testing.T) {
+	ctx := newTestContext(tt)
 
-	ctx := newTestContext(t)
-	cleanUserByEmail(ctx, t, email, "")
+	runner.Run(tt, "Register with email exists", func(t provider.T) {
+		t.WithNewStep("Email exists", func(sCtx provider.StepCtx) {
+			email := "newemail@gmail.com"
+			password := "New12321_new"
 
-	resp, err := authService.Register(ctx, &pb.RegisterRequest{
-		Username: "",
-		Email:    email,
-		Password: password,
-	})
-	if err == nil {
-		t.Cleanup(func() {
-			var refreshToken string
-			if resp != nil {
-				refreshToken = resp.RefreshToken
-			}
-			cleanUserByEmail(ctx, t, email, refreshToken)
+			cleanUserByEmail(ctx, tt, email, "")
+
+			resp, err := authService.Register(ctx, &pb.RegisterRequest{
+				Username: "",
+				Email:    email,
+				Password: password,
+			})
+
+			t.Cleanup(func() {
+				var refreshToken string
+				if resp != nil {
+					refreshToken = resp.RefreshToken
+				}
+				cleanUserByEmail(ctx, tt, email, refreshToken)
+			})
+
+			sCtx.Assert().Error(err, "Ошибка, отсутствует username")
+			sCtx.Assert().Nil(resp, "Response nil, регистрация неуспешна")
 		})
-	}
-
-	require.Error(t, err)
-	require.Nil(t, resp)
+	})
 }
 
-func TestRegisterNoEmail(t *testing.T) {
-	username := "Shellshocker"
-	password := "New12321_new"
+func TestRegisterNoEmail(tt *testing.T) {
+	ctx := newTestContext(tt)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	t.Cleanup(cancel)
+	runner.Run(tt, "Register with email exists", func(t provider.T) {
+		t.WithNewStep("Email exists", func(sCtx provider.StepCtx) {
+			username := "Shellshocker"
+			password := "New12321_new"
 
-	_, err := DB.Exec(`DELETE FROM users WHERE username = $1`, username)
-	if err != nil {
-		t.Logf("failed to delete user by username %s: %v", username, err)
-	}
-
-	var resp *auth.RegisterResponse
-	resp, err = authService.Register(ctx, &pb.RegisterRequest{
-		Username: username,
-		Email:    "",
-		Password: password,
-	})
-	if err == nil {
-		t.Cleanup(func() {
-			var refreshToken string
-			if resp != nil {
-				refreshToken = resp.RefreshToken
+			_, err := DB.Exec(`DELETE FROM users WHERE username = $1`, username)
+			if err != nil {
+				t.Logf("failed to delete user by username %s: %v", username, err)
 			}
-			cleanUserByEmail(ctx, t, "", refreshToken)
-		})
-	}
 
-	require.Error(t, err)
-	require.Nil(t, resp)
+			var resp *auth.RegisterResponse
+			resp, err = authService.Register(ctx, &pb.RegisterRequest{
+				Username: username,
+				Email:    "",
+				Password: password,
+			})
+
+			t.Cleanup(func() {
+				var refreshToken string
+				if resp != nil {
+					refreshToken = resp.RefreshToken
+				}
+				cleanUserByEmail(ctx, tt, "", refreshToken)
+			})
+
+			sCtx.Assert().Error(err, "Ошибка, отсутствует email")
+			sCtx.Assert().Nil(resp, "Response nil, регистрация неуспешна")
+		})
+	})
 }
 
-func TestRegisterNoPassword(t *testing.T) {
-	username := "Shellshocker"
-	email := "newemail@gmail.com"
+func TestRegisterNoPassword(tt *testing.T) {
+	ctx := newTestContext(tt)
 
-	ctx := newTestContext(t)
-	cleanUserByEmail(ctx, t, email, "")
+	runner.Run(tt, "Register with email exists", func(t provider.T) {
+		t.WithNewStep("Email exists", func(sCtx provider.StepCtx) {
+			username := "Shellshocker"
+			email := "newemail@gmail.com"
 
-	resp, err := authService.Register(ctx, &pb.RegisterRequest{
-		Username: username,
-		Email:    email,
-		Password: "",
-	})
-	if err == nil {
-		t.Cleanup(func() {
-			var refreshToken string
-			if resp != nil {
-				refreshToken = resp.RefreshToken
-			}
-			cleanUserByEmail(ctx, t, "", refreshToken)
+			cleanUserByEmail(ctx, tt, email, "")
+
+			resp, err := authService.Register(ctx, &pb.RegisterRequest{
+				Username: username,
+				Email:    email,
+				Password: "",
+			})
+			t.Cleanup(func() {
+				var refreshToken string
+				if resp != nil {
+					refreshToken = resp.RefreshToken
+				}
+				cleanUserByEmail(ctx, tt, "", refreshToken)
+			})
+
+			sCtx.Assert().Error(err, "Ошибка, пароль отсутствует")
+			sCtx.Assert().Nil(resp, "Response nil, регистрация неуспешна")
 		})
-	}
-
-	require.Error(t, err)
-	require.Nil(t, resp)
+	})
 }

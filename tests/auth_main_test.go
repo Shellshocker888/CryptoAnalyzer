@@ -50,8 +50,7 @@ func initPostgres(cfg *config.PostgresConfig) (*sql.DB, error) {
 func TestMain(m *testing.M) {
 	err := logger.InitTestLogger()
 	if err != nil {
-		fmt.Printf("failed to init logger: %v", err)
-		os.Exit(1)
+		zap.L().Fatal("failed to init test logger", zap.Error(err))
 	}
 	defer logger.SyncLogger()
 
@@ -60,53 +59,45 @@ func TestMain(m *testing.M) {
 
 	err = os.Setenv("APP_ENV", "test")
 	if err != nil {
-		logger.Log.Error("Error loading test env", zap.Error(err))
+		zap.L().Fatal("failed to set test environment variable", zap.Error(err))
 	}
 
-	err = config.LoadConfig()
-	if err != nil {
-		fmt.Printf("failed to load config: %v", err)
-		os.Exit(1)
+	if err = config.LoadConfig(); err != nil {
+		zap.L().Fatal("failed to load config", zap.Error(err))
 	}
 
 	var cfgPostgres *config.PostgresConfig
 	cfgPostgres, err = config.LoadPostgresConfig()
 	if err != nil {
-		fmt.Printf("failed to load postgres config: %v", err)
-		os.Exit(1)
+		zap.L().Fatal("failed to load postgres config", zap.Error(err))
 	}
 
 	DB, err = initPostgres(cfgPostgres)
 	if err != nil {
-		fmt.Printf("failed to init postgres DB: %v", err)
-		os.Exit(1)
+		zap.L().Fatal("failed to init postgres DB", zap.Error(err))
 	}
 	defer DB.Close()
 
 	var cfgRedis *config.RedisConfig
 	cfgRedis, err = config.LoadRedisConfig()
 	if err != nil {
-		fmt.Printf("failed to load redis config: %v", err)
-		os.Exit(1)
+		zap.L().Fatal("failed to load redis config", zap.Error(err))
 	}
 
 	redisClient, err = storage.InitRedisClient(ctx, cfgRedis)
 	if err != nil {
-		fmt.Printf("failed to init redis client: %v", err)
-		os.Exit(1)
+		zap.L().Fatal("failed to init redis client", zap.Error(err))
 	}
 
 	var cfgJWT *config.JWTConfig
 	cfgJWT, err = config.LoadJWTConfig()
 	if err != nil {
-		fmt.Printf("failed to load JWT config: %v", err)
-		os.Exit(1)
+		zap.L().Fatal("failed to load JWT config", zap.Error(err))
 	}
 
 	userStorage, err = storage.NewUserStorage(DB)
 	if err != nil {
-		fmt.Printf("failed to init user storage: %v", err)
-		os.Exit(1)
+		zap.L().Fatal("failed to init user storage", zap.Error(err))
 	}
 
 	userSessionManager = storage.NewSessionManager(cfgRedis, redisClient)
@@ -114,7 +105,6 @@ func TestMain(m *testing.M) {
 
 	authService = service.NewService(userStorage, userSessionManager, userJWTManager)
 
-	// Запускаем тесты
 	code := m.Run()
 	os.Exit(code)
 }
