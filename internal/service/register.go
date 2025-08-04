@@ -47,23 +47,23 @@ func isValidEmail(email string) bool {
 }
 
 func (s *AuthService) Register(ctx context.Context, req *auth.RegisterRequest) (*auth.RegisterResponse, error) {
-	if req.Username == "" {
-		return nil, errors.New("username is required")
-	}
-	if req.Email == "" {
-		return nil, errors.New("email is required")
-	}
-	if !isValidEmail(req.Email) {
-		return nil, errors.New("invalid email format")
-	}
-	if req.Password == "" {
-		return nil, errors.New("password is required")
-	}
-	if !isValidPassword(req.Password) {
-		return nil, errors.New("password must be at least 8 characters long, contain uppercase and lowercase letters, at least one digit, and a special character")
+	username := req.Username
+	email := req.Email
+	password := req.Password
+
+	if username == "" || email == "" || password == "" {
+		return nil, ErrNotEnoughData
 	}
 
-	exists, err := s.Storage.EmailExists(ctx, req.Email)
+	if !isValidEmail(email) {
+		return nil, ErrWeakEmail
+	}
+
+	if !isValidPassword(password) {
+		return nil, ErrWeakPassword
+	}
+
+	exists, err := s.Storage.EmailExists(ctx, email)
 	if err != nil {
 		logger.Log.Error("failed to check email existence", zap.Error(err))
 		return nil, errors.New("failed to register user")
@@ -82,7 +82,7 @@ func (s *AuthService) Register(ctx context.Context, req *auth.RegisterRequest) (
 	}*/
 
 	var passwordHash []byte
-	passwordHash, err = bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	passwordHash, err = bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		logger.Log.Error("failed to generate password hash", zap.Error(err))
 		return nil, errors.New("failed to register user")
@@ -92,8 +92,8 @@ func (s *AuthService) Register(ctx context.Context, req *auth.RegisterRequest) (
 
 	user := &domain.User{
 		ID:           userID,
-		Username:     req.Username,
-		Email:        req.Email,
+		Username:     username,
+		Email:        email,
 		PasswordHash: string(passwordHash),
 		CreatedAt:    time.Now(),
 	}
@@ -105,7 +105,7 @@ func (s *AuthService) Register(ctx context.Context, req *auth.RegisterRequest) (
 	}
 
 	var accessToken string
-	accessToken, err = s.JWTManager.GenerateAccessToken(userID, req.Username, req.Email)
+	accessToken, err = s.JWTManager.GenerateAccessToken(userID, username, email)
 	if err != nil {
 		logger.Log.Error("failed to generate access token", zap.Error(err))
 		return nil, errors.New("failed to register user")

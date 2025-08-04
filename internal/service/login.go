@@ -14,30 +14,30 @@ func (s *AuthService) Login(ctx context.Context, req *auth.LoginRequest) (*auth.
 	email := req.Email
 	password := req.Password
 
-	if (username == "" && email == "") || password == "" {
-		return nil, errors.New("username or email must be provided and password must not be empty")
+	if username == "" && email == "" || password == "" {
+		return nil, ErrNotEnoughData
 	}
 	if email != "" {
 		if !isValidEmail(req.Email) {
-			return nil, errors.New("invalid email format")
+			return nil, ErrWeakEmail
 		}
 	}
 	if !isValidPassword(req.Password) {
-		return nil, errors.New("password must be at least 8 characters long, contain uppercase and lowercase letters, at least one digit, and a special character")
+		return nil, ErrWeakPassword
 	}
 
 	user, err := s.Storage.GetUserByUsernameEmail(ctx, username, email)
 	if err != nil {
 		logger.Log.Error("failed to get user by username/email", zap.Error(err))
-		return nil, errors.New("invalid credentials")
+		return nil, ErrInvCredentials
 	}
 	if user == nil {
-		return nil, errors.New("invalid credentials")
+		return nil, ErrInvCredentials
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
 	if err != nil {
-		return nil, errors.New("invalid credentials")
+		return nil, ErrInvCredentials
 	}
 
 	var accessToken string
