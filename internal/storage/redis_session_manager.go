@@ -59,22 +59,22 @@ func (s *SessionManager) GetUserIDByRefreshToken(ctx context.Context, refreshTok
 	return userID, nil
 }
 
-func (s *SessionManager) IsRefreshTokenValid(ctx context.Context, userID, refreshToken string) (bool, error) {
-	key := fmt.Sprintf("%s:%s", s.prefix, refreshToken)
-	storedUserID, err := s.client.Get(ctx, key).Result()
+/*
+	func (s *SessionManager) IsRefreshTokenValid(ctx context.Context, userID, refreshToken string) (bool, error) {
+		key := fmt.Sprintf("%s:%s", s.prefix, refreshToken)
+		storedUserID, err := s.client.Get(ctx, key).Result()
 
-	if errors.Is(err, redis.Nil) {
-		// Токен не найден — он либо не существует, либо истёк
-		return false, nil
+		if errors.Is(err, redis.Nil) {
+			return false, nil
+		}
+
+		if err != nil {
+			return false, fmt.Errorf("failed to get refresh token: %w", err)
+		}
+
+		return storedUserID == userID, nil
 	}
-
-	if err != nil {
-		return false, fmt.Errorf("failed to get refresh token: %w", err)
-	}
-
-	return storedUserID == userID, nil
-}
-
+*/
 func (s *SessionManager) DeleteRefreshToken(ctx context.Context, refreshToken string) error {
 	key := fmt.Sprintf("%s:%s", s.prefix, refreshToken)
 	if err := s.client.Del(ctx, key).Err(); err != nil {

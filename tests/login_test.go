@@ -1,20 +1,11 @@
 package tests
 
 import (
-	pb "crypto_analyzer_auth_service/gen/go"
 	"crypto_analyzer_auth_service/internal/service"
 	"github.com/ozontech/allure-go/pkg/framework/provider"
 	"github.com/ozontech/allure-go/pkg/framework/runner"
 	"testing"
 )
-
-func loginRequest(username, email, password string) *pb.LoginRequest {
-	return &pb.LoginRequest{
-		Username: username,
-		Email:    email,
-		Password: password,
-	}
-}
 
 func TestLoginWeakPassword(tt *testing.T) {
 	ctx := newTestContext(tt)
@@ -42,22 +33,18 @@ func TestLoginStrongPasswordCorrectEmail(tt *testing.T) {
 			email := "newemail25@gmail.com"
 			password := "New12321_new"
 
-			cleanUserByEmail(ctx, tt, email, "")
+			cleanUserByEmail(ctx, tt, email, nil)
 
 			resp, err := authService.Register(ctx, registerRequest(username, email, password))
 
 			t.Cleanup(func() {
-				var refreshToken string
-				if resp != nil {
-					refreshToken = resp.RefreshToken
-				}
-				cleanUserByEmail(ctx, tt, email, refreshToken)
+				cleanUserByEmail(ctx, tt, email, resp)
 			})
 
-			sCtx.Assert().NoError(err, "Отсутствие ошибки при сильном пароле и корректном email")
-			sCtx.Assert().NotNil(resp, "Response не nil, регистрация успешна")
-			sCtx.Assert().NotEmpty(resp.Token, "Наличие access токена")
-			sCtx.Assert().NotEmpty(resp.RefreshToken, "Наличие refresh токена")
+			sCtx.Require().NoError(err, "Отсутствие ошибки при сильном пароле и корректном email")
+			sCtx.Require().NotNil(resp, "Response не nil, регистрация успешна")
+			sCtx.Require().NotEmpty(resp.Token, "Наличие access токена")
+			sCtx.Require().NotEmpty(resp.RefreshToken, "Наличие refresh токена")
 		})
 
 		t.WithNewStep("Login with strong password and correct email", func(sCtx provider.StepCtx) {
@@ -101,22 +88,18 @@ func TestLoginNoUsernameValidEmail(tt *testing.T) {
 			email := "newemail25@gmail.com"
 			password := "New12321_new"
 
-			cleanUserByEmail(ctx, tt, email, "")
+			cleanUserByEmail(ctx, tt, email, nil)
 
 			resp, err := authService.Register(ctx, registerRequest(username, email, password))
 
 			t.Cleanup(func() {
-				var refreshToken string
-				if resp != nil {
-					refreshToken = resp.RefreshToken
-				}
-				cleanUserByEmail(ctx, tt, email, refreshToken)
+				cleanUserByEmail(ctx, tt, email, resp)
 			})
 
-			sCtx.Assert().NoError(err, "Отсутствие ошибки всех корректных данных")
-			sCtx.Assert().NotNil(resp, "Response не nil, регистрация успешна")
-			sCtx.Assert().NotEmpty(resp.Token, "Наличие access токена")
-			sCtx.Assert().NotEmpty(resp.RefreshToken, "Наличие refresh токена")
+			sCtx.Require().NoError(err, "Отсутствие ошибки всех корректных данных")
+			sCtx.Require().NotNil(resp, "Response не nil, регистрация успешна")
+			sCtx.Require().NotEmpty(resp.Token, "Наличие access токена")
+			sCtx.Require().NotEmpty(resp.RefreshToken, "Наличие refresh токена")
 		})
 
 		t.WithNewStep("Login without username", func(sCtx provider.StepCtx) {
@@ -143,22 +126,18 @@ func TestLoginNoEmailValidUsername(tt *testing.T) {
 			email := "testemail@gmail.com"
 			password := "New12321_new"
 
-			cleanUserByEmail(ctx, tt, email, "")
+			cleanUserByEmail(ctx, tt, email, nil)
 
 			resp, err := authService.Register(ctx, registerRequest(username, email, password))
 
 			t.Cleanup(func() {
-				var refreshToken string
-				if resp != nil {
-					refreshToken = resp.RefreshToken
-				}
-				cleanUserByEmail(ctx, tt, email, refreshToken)
+				cleanUserByEmail(ctx, tt, email, resp)
 			})
 
-			sCtx.Assert().NoError(err, "Отсутствие ошибки всех корректных данных")
-			sCtx.Assert().NotNil(resp, "Response не nil, регистрация успешна")
-			sCtx.Assert().NotEmpty(resp.Token, "Наличие access токена")
-			sCtx.Assert().NotEmpty(resp.RefreshToken, "Наличие refresh токена")
+			sCtx.Require().NoError(err, "Отсутствие ошибки всех корректных данных")
+			sCtx.Require().NotNil(resp, "Response не nil, регистрация успешна")
+			sCtx.Require().NotEmpty(resp.Token, "Наличие access токена")
+			sCtx.Require().NotEmpty(resp.RefreshToken, "Наличие refresh токена")
 		})
 
 		t.WithNewStep("Login without email", func(sCtx provider.StepCtx) {
@@ -201,22 +180,18 @@ func TestLoginNoEmailInvalidUsername(tt *testing.T) {
 			email := "testemail@gmail.com"
 			password := "New12321_new"
 
-			cleanUserByEmail(ctx, tt, email, "")
+			cleanUserByEmail(ctx, tt, email, nil)
 
 			resp, err := authService.Register(ctx, registerRequest(username, email, password))
 
 			t.Cleanup(func() {
-				var refreshToken string
-				if resp != nil {
-					refreshToken = resp.RefreshToken
-				}
-				cleanUserByEmail(ctx, tt, email, refreshToken)
+				cleanUserByEmail(ctx, tt, email, resp)
 			})
 
-			sCtx.Assert().NoError(err, "Отсутствие ошибки, все данные корректны")
-			sCtx.Assert().NotNil(resp, "Response не nil, регистрация успешна")
-			sCtx.Assert().NotEmpty(resp.Token, "Наличие access токена")
-			sCtx.Assert().NotEmpty(resp.RefreshToken, "Наличие refresh токена")
+			sCtx.Require().NoError(err, "Отсутствие ошибки, все данные корректны")
+			sCtx.Require().NotNil(resp, "Response не nil, регистрация успешна")
+			sCtx.Require().NotEmpty(resp.Token, "Наличие access токена")
+			sCtx.Require().NotEmpty(resp.RefreshToken, "Наличие refresh токена")
 		})
 
 		t.WithNewStep("Login without email and with invalid username", func(sCtx provider.StepCtx) {
@@ -241,22 +216,18 @@ func TestLoginNoUsernameInvalidEmail(tt *testing.T) {
 			email := "testemail@gmail.com"
 			password := "New12321_new"
 
-			cleanUserByEmail(ctx, tt, email, "")
+			cleanUserByEmail(ctx, tt, email, nil)
 
 			resp, err := authService.Register(ctx, registerRequest(username, email, password))
 
 			t.Cleanup(func() {
-				var refreshToken string
-				if resp != nil {
-					refreshToken = resp.RefreshToken
-				}
-				cleanUserByEmail(ctx, tt, email, refreshToken)
+				cleanUserByEmail(ctx, tt, email, resp)
 			})
 
-			sCtx.Assert().NoError(err, "Отсутствие ошибки, все данные корректны")
-			sCtx.Assert().NotNil(resp, "Response не nil, регистрация успешна")
-			sCtx.Assert().NotEmpty(resp.Token, "Наличие access токена")
-			sCtx.Assert().NotEmpty(resp.RefreshToken, "Наличие refresh токена")
+			sCtx.Require().NoError(err, "Отсутствие ошибки, все данные корректны")
+			sCtx.Require().NotNil(resp, "Response не nil, регистрация успешна")
+			sCtx.Require().NotEmpty(resp.Token, "Наличие access токена")
+			sCtx.Require().NotEmpty(resp.RefreshToken, "Наличие refresh токена")
 		})
 
 		t.WithNewStep("Login without username and with invalid email", func(sCtx provider.StepCtx) {

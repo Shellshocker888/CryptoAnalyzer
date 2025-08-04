@@ -2,20 +2,11 @@ package tests
 
 import (
 	"crypto_analyzer_auth_service/gen/go"
-	pb "crypto_analyzer_auth_service/gen/go"
 	"crypto_analyzer_auth_service/internal/service"
 	"github.com/ozontech/allure-go/pkg/framework/provider"
 	"github.com/ozontech/allure-go/pkg/framework/runner"
 	"testing"
 )
-
-func registerRequest(username, email, password string) *pb.RegisterRequest {
-	return &pb.RegisterRequest{
-		Username: username,
-		Email:    email,
-		Password: password,
-	}
-}
 
 func TestRegisterWeakPassword(tt *testing.T) {
 	ctx := newTestContext(tt)
@@ -26,15 +17,12 @@ func TestRegisterWeakPassword(tt *testing.T) {
 			email := "newemail@gmail.com"
 			password := "123123123"
 
-			cleanUserByEmail(ctx, tt, email, "")
+			cleanUserByEmail(ctx, tt, email, nil)
 
 			resp, err := authService.Register(ctx, registerRequest(username, email, password))
+
 			t.Cleanup(func() {
-				var refreshToken string
-				if resp != nil {
-					refreshToken = resp.RefreshToken
-				}
-				cleanUserByEmail(ctx, tt, email, refreshToken)
+				cleanUserByEmail(ctx, tt, email, resp)
 			})
 
 			sCtx.Assert().ErrorIs(err, service.ErrWeakPassword)
@@ -52,16 +40,12 @@ func TestRegisterStrongPasswordCorrectEmail(tt *testing.T) {
 			email := "newemail25@gmail.com"
 			password := "New12321_new"
 
-			cleanUserByEmail(ctx, tt, email, "")
+			cleanUserByEmail(ctx, tt, email, nil)
 
 			resp, err := authService.Register(ctx, registerRequest(username, email, password))
 
 			t.Cleanup(func() {
-				var refreshToken string
-				if resp != nil {
-					refreshToken = resp.RefreshToken
-				}
-				cleanUserByEmail(ctx, tt, email, refreshToken)
+				cleanUserByEmail(ctx, tt, email, resp)
 			})
 
 			sCtx.Assert().NoError(err, "Отсутствие ошибки при сильном пароле и корректном email")
@@ -81,21 +65,17 @@ func TestRegisterEmailExists(tt *testing.T) {
 			email := "newemail@gmail.com"
 			password := "New12321_new"
 
-			cleanUserByEmail(ctx, tt, email, "")
+			cleanUserByEmail(ctx, tt, email, nil)
 
 			resp, err := authService.Register(ctx, registerRequest(username, email, password))
 
 			t.Cleanup(func() {
-				var refreshToken string
-				if resp != nil {
-					refreshToken = resp.RefreshToken
-				}
-				cleanUserByEmail(ctx, tt, email, refreshToken)
+				cleanUserByEmail(ctx, tt, email, resp)
 			})
 
-			sCtx.Assert().NoError(err, "Ошибки нет, регистрация выполнена")
-			sCtx.Assert().NotEmpty(resp.Token, "Наличие access токена")
-			sCtx.Assert().NotEmpty(resp.RefreshToken, "Наличие refresh токена")
+			sCtx.Require().NoError(err, "Ошибки нет, регистрация выполнена")
+			sCtx.Require().NotEmpty(resp.Token, "Наличие access токена")
+			sCtx.Require().NotEmpty(resp.RefreshToken, "Наличие refresh токена")
 		})
 
 		t.WithNewStep("Register email exists", func(sCtx provider.StepCtx) {
@@ -120,16 +100,12 @@ func TestRegisterWrongEmail(tt *testing.T) {
 			email := "newemailgmail.com"
 			password := "New12321_new"
 
-			cleanUserByEmail(ctx, tt, email, "")
+			cleanUserByEmail(ctx, tt, email, nil)
 
 			resp, err := authService.Register(ctx, registerRequest(username, email, password))
 
 			t.Cleanup(func() {
-				var refreshToken string
-				if resp != nil {
-					refreshToken = resp.RefreshToken
-				}
-				cleanUserByEmail(ctx, tt, email, refreshToken)
+				cleanUserByEmail(ctx, tt, email, resp)
 			})
 
 			sCtx.Assert().ErrorIs(err, service.ErrWeakEmail)
@@ -146,16 +122,12 @@ func TestRegisterNoUsername(tt *testing.T) {
 			email := "newemail@gmail.com"
 			password := "New12321_new"
 
-			cleanUserByEmail(ctx, tt, email, "")
+			cleanUserByEmail(ctx, tt, email, nil)
 
 			resp, err := authService.Register(ctx, registerRequest("", email, password))
 
 			t.Cleanup(func() {
-				var refreshToken string
-				if resp != nil {
-					refreshToken = resp.RefreshToken
-				}
-				cleanUserByEmail(ctx, tt, email, refreshToken)
+				cleanUserByEmail(ctx, tt, email, resp)
 			})
 
 			sCtx.Assert().ErrorIs(err, service.ErrNotEnoughData)
@@ -181,11 +153,7 @@ func TestRegisterNoEmail(tt *testing.T) {
 			resp, err = authService.Register(ctx, registerRequest(username, "", password))
 
 			t.Cleanup(func() {
-				var refreshToken string
-				if resp != nil {
-					refreshToken = resp.RefreshToken
-				}
-				cleanUserByEmail(ctx, tt, "", refreshToken)
+				cleanUserByEmail(ctx, tt, "", resp)
 			})
 
 			sCtx.Assert().Error(err, "Ошибка, отсутствует email")
@@ -202,16 +170,12 @@ func TestRegisterNoPassword(tt *testing.T) {
 			username := "Shellshocker"
 			email := "newemail@gmail.com"
 
-			cleanUserByEmail(ctx, tt, email, "")
+			cleanUserByEmail(ctx, tt, email, nil)
 
 			resp, err := authService.Register(ctx, registerRequest(username, email, ""))
 
 			t.Cleanup(func() {
-				var refreshToken string
-				if resp != nil {
-					refreshToken = resp.RefreshToken
-				}
-				cleanUserByEmail(ctx, tt, "", refreshToken)
+				cleanUserByEmail(ctx, tt, email, resp)
 			})
 
 			sCtx.Assert().Error(err, "Ошибка, пароль отсутствует")
