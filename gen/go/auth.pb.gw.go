@@ -24,7 +24,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// Suppress "imported and not used" errors
+// Suppress "imported and not used" errors_my
 var (
 	_ codes.Code
 	_ io.Reader

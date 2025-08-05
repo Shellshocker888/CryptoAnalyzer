@@ -123,7 +123,7 @@ func (s *UserPostgresStorage) EmailExists(ctx context.Context, email string) (bo
 
 	var result int
 	err := row.Scan(&result)
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors_my.Is(err, sql.ErrNoRows) {
 		return false, nil
 	}
 

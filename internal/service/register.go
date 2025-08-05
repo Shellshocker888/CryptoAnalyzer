@@ -4,6 +4,7 @@ import (
 	"context"
 	auth "crypto_analyzer_auth_service/gen/go"
 	"crypto_analyzer_auth_service/internal/domain"
+	errors2 "crypto_analyzer_auth_service/internal/errors_my"
 	"crypto_analyzer_auth_service/internal/logger"
 	"errors"
 	"github.com/google/uuid"
@@ -52,15 +53,15 @@ func (s *AuthService) Register(ctx context.Context, req *auth.RegisterRequest) (
 	password := req.Password
 
 	if username == "" || email == "" || password == "" {
-		return nil, ErrNotEnoughData
+		return nil, errors2.ErrNotEnoughData
 	}
 
 	if !isValidEmail(email) {
-		return nil, ErrWeakEmail
+		return nil, errors2.ErrWeakEmail
 	}
 
 	if !isValidPassword(password) {
-		return nil, ErrWeakPassword
+		return nil, errors2.ErrWeakPassword
 	}
 
 	exists, err := s.Storage.EmailExists(ctx, email)
@@ -75,10 +76,10 @@ func (s *AuthService) Register(ctx context.Context, req *auth.RegisterRequest) (
 	/*exists, err = s.Storage.UsernameExists(ctx, req.Username)
 	if err != nil {
 		logger.Log.Error("failed to check username existence", zap.Error(err))
-		return nil, errors.New("failed to register user")
+		return nil, errors_my.New("failed to register user")
 	}
 	if exists {
-		return nil, errors.New("the username has been already taken")
+		return nil, errors_my.New("the username has been already taken")
 	}*/
 
 	var passwordHash []byte

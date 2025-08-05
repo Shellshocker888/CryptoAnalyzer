@@ -1,7 +1,7 @@
 package tests
 
 import (
-	"crypto_analyzer_auth_service/internal/service"
+	"crypto_analyzer_auth_service/internal/errors_my"
 	"github.com/ozontech/allure-go/pkg/framework/provider"
 	"github.com/ozontech/allure-go/pkg/framework/runner"
 	"testing"
@@ -18,7 +18,7 @@ func TestLoginWeakPassword(tt *testing.T) {
 
 			resp, err := authService.Login(ctx, loginRequest(username, email, password))
 
-			sCtx.Assert().ErrorIs(err, service.ErrWeakPassword)
+			sCtx.Assert().ErrorIs(err, errors_my.ErrWeakPassword)
 			sCtx.Assert().Nil(resp, "Response nil, вход не выполнен")
 		})
 	})
@@ -73,7 +73,7 @@ func TestLoginWeakEmail(tt *testing.T) {
 
 			resp, err := authService.Login(ctx, loginRequest(username, email, password))
 
-			sCtx.Assert().ErrorIs(err, service.ErrWeakEmail)
+			sCtx.Assert().ErrorIs(err, errors_my.ErrWeakEmail)
 			sCtx.Assert().Nil(resp, "Response nil, вход не выполнен")
 		})
 	})
@@ -165,7 +165,7 @@ func TestLoginNoPassword(tt *testing.T) {
 
 			resp, err := authService.Login(ctx, loginRequest(username, email, ""))
 
-			sCtx.Assert().ErrorIs(err, service.ErrNotEnoughData)
+			sCtx.Assert().ErrorIs(err, errors_my.ErrNotEnoughData)
 			sCtx.Assert().Nil(resp, "Response nil, вход не выполнен")
 		})
 	})
@@ -201,7 +201,7 @@ func TestLoginNoEmailInvalidUsername(tt *testing.T) {
 
 			resp, err := authService.Login(ctx, loginRequest(username, email, password))
 
-			sCtx.Assert().ErrorIs(err, service.ErrInvCredentials)
+			sCtx.Assert().ErrorIs(err, errors_my.ErrInvCredentials)
 			sCtx.Assert().Nil(resp, "Response nil, вход не выполнен")
 		})
 	})
@@ -237,7 +237,7 @@ func TestLoginNoUsernameInvalidEmail(tt *testing.T) {
 
 			resp, err := authService.Login(ctx, loginRequest(username, email, password))
 
-			sCtx.Assert().ErrorIs(err, service.ErrInvCredentials)
+			sCtx.Assert().ErrorIs(err, errors_my.ErrInvCredentials)
 			sCtx.Assert().Nil(resp, "Response nil, вход не выполнен")
 		})
 	})

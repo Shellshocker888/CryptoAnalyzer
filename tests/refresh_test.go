@@ -1,7 +1,7 @@
 package tests
 
 import (
-	"crypto_analyzer_auth_service/internal/service"
+	"crypto_analyzer_auth_service/internal/errors_my"
 	"github.com/ozontech/allure-go/pkg/framework/provider"
 	"github.com/ozontech/allure-go/pkg/framework/runner"
 	"testing"
@@ -74,7 +74,7 @@ func TestRefreshInvalidRefreshToken(tt *testing.T) {
 		t.WithNewStep("Refresh with invalid refresh token", func(sCtx provider.StepCtx) {
 			resp, err := authService.Refresh(ctx, refreshRequest("invalidRefreshToken"))
 
-			sCtx.Assert().ErrorIs(err, service.ErrRefreshFailed)
+			sCtx.Assert().ErrorIs(err, errors_my.ErrRefreshFailed)
 			sCtx.Assert().Nil(resp, "Response nil, refresh не выполнен")
 		})
 	})
@@ -108,7 +108,7 @@ func TestRefreshValidRefreshTokenWithoutUser(tt *testing.T) {
 		t.WithNewStep("Refresh with valid refresh token without user saved", func(sCtx provider.StepCtx) {
 			resp, err := authService.Refresh(ctx, refreshRequest(refreshToken))
 
-			sCtx.Assert().ErrorIs(err, service.ErrRefreshFailed)
+			sCtx.Assert().ErrorIs(err, errors_my.ErrRefreshFailed)
 			sCtx.Assert().Nil(resp, "Response nil, refresh не выполнен")
 		})
 	})
@@ -146,7 +146,40 @@ func TestRefreshOutdatedRefreshToken(tt *testing.T) {
 
 			resp, err := authService.Refresh(ctx, refreshRequest(refreshToken))
 
-			sCtx.Assert().ErrorIs(err, service.ErrRefreshFailed)
+			sCtx.Assert().ErrorIs(err, errors_my.ErrRefreshFailed)
+			sCtx.Assert().Nil(resp, "Response nil, refresh не выполнен")
+		})
+	})
+}
+
+func TestRefreshWithoutRefreshToken(tt *testing.T) {
+	ctx := newTestContext(tt)
+
+	runner.Run(tt, "Refresh without refresh token", func(t provider.T) {
+
+		t.WithNewStep("Register", func(sCtx provider.StepCtx) {
+			username := "Shellshocker25"
+			email := "newemail25@gmail.com"
+			password := "New12321_new"
+
+			cleanUserByEmail(ctx, tt, email, nil)
+
+			resp, err := authService.Register(ctx, registerRequest(username, email, password))
+
+			t.Cleanup(func() {
+				cleanUserByEmail(ctx, tt, email, resp)
+			})
+
+			sCtx.Require().NoError(err, "Отсутствие ошибки при сильном пароле и корректном email")
+			sCtx.Require().NotNil(resp, "Response не nil, регистрация успешна")
+			sCtx.Require().NotEmpty(resp.Token, "Наличие access токена")
+			sCtx.Require().NotEmpty(resp.RefreshToken, "Наличие refresh токена")
+		})
+
+		t.WithNewStep("Refresh without refresh token", func(sCtx provider.StepCtx) {
+			resp, err := authService.Refresh(ctx, refreshRequest(""))
+
+			sCtx.Assert().ErrorIs(err, errors_my.ErrRefreshFailed)
 			sCtx.Assert().Nil(resp, "Response nil, refresh не выполнен")
 		})
 	})

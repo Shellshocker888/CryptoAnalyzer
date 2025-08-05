@@ -64,7 +64,7 @@ func (s *SessionManager) GetUserIDByRefreshToken(ctx context.Context, refreshTok
 		key := fmt.Sprintf("%s:%s", s.prefix, refreshToken)
 		storedUserID, err := s.client.Get(ctx, key).Result()
 
-		if errors.Is(err, redis.Nil) {
+		if errors_my.Is(err, redis.Nil) {
 			return false, nil
 		}
 

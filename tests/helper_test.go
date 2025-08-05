@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto_analyzer_auth_service/gen/go"
 	pb "crypto_analyzer_auth_service/gen/go"
+	"google.golang.org/grpc/metadata"
 	"testing"
 	"time"
 )
@@ -47,4 +48,10 @@ func registerRequest(username, email, password string) *pb.RegisterRequest {
 
 func refreshRequest(refreshToken string) *pb.RefreshRequest {
 	return &pb.RefreshRequest{RefreshToken: refreshToken}
+}
+
+func verifyRequest(accessToken string) (*auth.VerifyResponse, error) {
+	md := metadata.Pairs("authorization", accessToken)
+	ctx := metadata.NewIncomingContext(context.Background(), md)
+	return authService.Verify(ctx, &pb.VerifyRequest{})
 }

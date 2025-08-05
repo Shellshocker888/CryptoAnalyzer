@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"crypto_analyzer_auth_service/internal/config"
 	"crypto_analyzer_auth_service/internal/domain"
+	"crypto_analyzer_auth_service/internal/errors_my"
 	"crypto_analyzer_auth_service/internal/interfaces"
 	"encoding/base64"
 	"errors"
@@ -59,7 +60,7 @@ func (j *JWTManager) ParseAccessToken(tokenStr string) (*domain.User, error) {
 	})
 
 	if err != nil || !token.Valid {
-		return nil, errors.New("access token is invalid")
+		return nil, errors_my.ErrInvalidAccessToken
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)

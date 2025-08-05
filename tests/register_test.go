@@ -2,7 +2,7 @@ package tests
 
 import (
 	"crypto_analyzer_auth_service/gen/go"
-	"crypto_analyzer_auth_service/internal/service"
+	"crypto_analyzer_auth_service/internal/errors_my"
 	"github.com/ozontech/allure-go/pkg/framework/provider"
 	"github.com/ozontech/allure-go/pkg/framework/runner"
 	"testing"
@@ -25,7 +25,7 @@ func TestRegisterWeakPassword(tt *testing.T) {
 				cleanUserByEmail(ctx, tt, email, resp)
 			})
 
-			sCtx.Assert().ErrorIs(err, service.ErrWeakPassword)
+			sCtx.Assert().ErrorIs(err, errors_my.ErrWeakPassword)
 			sCtx.Assert().Nil(resp, "Response nil, регистрация не выполнена")
 		})
 	})
@@ -108,7 +108,7 @@ func TestRegisterWrongEmail(tt *testing.T) {
 				cleanUserByEmail(ctx, tt, email, resp)
 			})
 
-			sCtx.Assert().ErrorIs(err, service.ErrWeakEmail)
+			sCtx.Assert().ErrorIs(err, errors_my.ErrWeakEmail)
 			sCtx.Assert().Nil(resp, "Response nil, регистрация не выполнена")
 		})
 	})
@@ -130,7 +130,7 @@ func TestRegisterNoUsername(tt *testing.T) {
 				cleanUserByEmail(ctx, tt, email, resp)
 			})
 
-			sCtx.Assert().ErrorIs(err, service.ErrNotEnoughData)
+			sCtx.Assert().ErrorIs(err, errors_my.ErrNotEnoughData)
 			sCtx.Assert().Nil(resp, "Response nil, регистрация не выполнена")
 		})
 	})
