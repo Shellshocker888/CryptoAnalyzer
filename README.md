@@ -24,7 +24,7 @@ Crypto Analyzer Auth Service — высокопроизводительный и
 
 
 ## Project Structure
-
+````
 ├── cmd/ # Точка входа в сервис (main)
 ├── gen/ # Сгенерированные файлы (grpc)
 ├── internal/
@@ -46,7 +46,7 @@ Crypto Analyzer Auth Service — высокопроизводительный и
 ├── go.mod
 ├── Taskfile.yml
 └── README.md
-
+````
 
 ## Requirements
 
