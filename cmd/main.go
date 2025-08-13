@@ -2,111 +2,18 @@ package main
 
 import (
 	"context"
-	pb "crypto_analyzer_auth_service/gen/go"
-	"crypto_analyzer_auth_service/internal/config"
-	"crypto_analyzer_auth_service/internal/handler"
-	"crypto_analyzer_auth_service/internal/logger"
-	"crypto_analyzer_auth_service/internal/service"
-	"crypto_analyzer_auth_service/internal/storage"
-	"database/sql"
-	"fmt"
+	"crypto_analyzer_auth_service/internal/app"
 	_ "github.com/lib/pq"
-	"github.com/redis/go-redis/v9"
-	"go.uber.org/zap"
-	"google.golang.org/grpc"
-	"net"
-	"time"
+	"log"
+	"os/signal"
+	"syscall"
 )
 
-func initPostgres(cfg *config.PostgresConfig) (*sql.DB, error) {
-
-	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s", cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.Name, cfg.SslMode)
-
-	db, err := sql.Open("postgres", connStr)
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to postgres: %w", err)
-	}
-
-	err = db.Ping()
-	if err != nil {
-		return nil, fmt.Errorf("failed to ping postgres: %w", err)
-	}
-
-	db.SetMaxOpenConns(20)
-	db.SetMaxIdleConns(10)
-	db.SetConnMaxIdleTime(5 * time.Minute)
-	db.SetConnMaxLifetime(1 * time.Hour)
-
-	return db, nil
-}
-
 func main() {
-	err := logger.InitLogger()
-	if err != nil {
-		zap.L().Fatal("failed to init logger", zap.Error(err))
-	}
-	defer logger.SyncLogger()
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	if err = config.LoadConfig(); err != nil {
-		zap.L().Fatal("failed to load config", zap.Error(err))
-	}
-
-	var cfgPostgres *config.PostgresConfig
-	cfgPostgres, err = config.LoadPostgresConfig()
-	if err != nil {
-		zap.L().Fatal("failed to load postgres config", zap.Error(err))
-	}
-
-	var DB *sql.DB
-	DB, err = initPostgres(cfgPostgres)
-	if err != nil {
-		zap.L().Fatal("failed to init postgres DB", zap.Error(err))
-	}
-	defer DB.Close()
-
-	var cfgRedis *config.RedisConfig
-	cfgRedis, err = config.LoadRedisConfig()
-	if err != nil {
-		zap.L().Fatal("failed to load redis config", zap.Error(err))
-	}
-
-	var redisClient *redis.Client
-	redisClient, err = storage.InitRedisClient(ctx, cfgRedis)
-	if err != nil {
-		zap.L().Fatal("failed to init redis client", zap.Error(err))
-	}
-
-	var cfgJWT *config.JWTConfig
-	cfgJWT, err = config.LoadJWTConfig()
-	if err != nil {
-		zap.L().Fatal("failed to load JWT config", zap.Error(err))
-	}
-
-	var userStorage *storage.UserPostgresStorage
-	userStorage, err = storage.NewUserStorage(DB)
-	if err != nil {
-		zap.L().Fatal("failed to init user storage", zap.Error(err))
-	}
-
-	userSessionManager := storage.NewSessionManager(cfgRedis, redisClient)
-	userJWTManager := storage.NewJWTManager(cfgJWT)
-
-	authService := service.NewService(userStorage, userSessionManager, userJWTManager)
-	authHandler := handler.NewAuthHandler(authService, logger.Log)
-
-	grpcServer := grpc.NewServer()
-	pb.RegisterAuthServiceServer(grpcServer, authHandler)
-
-	var listener50051 net.Listener
-	listener50051, err = net.Listen("tcp", ":50051")
-	if err != nil {
-		zap.L().Fatal("failed to init listener for port 50051", zap.Error(err))
-	}
-
-	if err = grpcServer.Serve(listener50051); err != nil {
-		zap.L().Fatal("failed to start grpc server", zap.Error(err))
+	if err := app.Start(ctx); err != nil {
+		log.Fatalf("start app error: %v", err)
 	}
 }

@@ -1,0 +1,50 @@
+version: '3'
+
+tasks:
+  # === Инфраструктура ===
+  up-infra:
+    desc: "Поднять инфраструктуру"
+    cmds:
+      - docker-compose up -d
+
+  down-infra:
+    desc: "Остановить и удалить контейнеры инфраструктуры"
+    cmds:
+      - docker-compose down -v
+
+  # === Инфраструктура для тестирования ===
+  up-infra-test:
+    desc: "Поднять инфраструктуру для тестов"
+    cmds:
+      - docker-compose -f docker-compose.test.yml up -d
+
+  down-infra-test:
+    desc: "Остановить тестовую инфраструктуру"
+    cmds:
+      - docker-compose -f docker-compose.test.yml down -v
+
+  # === Сборка сервиса ===
+  build:
+    desc: "Собрать сервис"
+    cmds:
+      - go build -o bin/crypto-analyzer.exe ./cmd
+
+  # === Запуск сервиса ===
+  run:
+    desc: "Запустить сервис локально"
+    cmds:
+      - go run ./cmd
+
+  # === Тесты ===
+  test:
+    desc: "Запустить интеграционные тесты"
+    cmds:
+      - task: up-infra-test
+      - go test ./tests -v
+      - task: down-infra-test
+
+  # === Очистка ===
+  clean:
+    desc: "Очистка бинарников"
+    cmds:
+      - rm -rf bin/

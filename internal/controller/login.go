@@ -1,0 +1,25 @@
+package controller
+
+import (
+	"context"
+	pb "crypto_analyzer_auth_service/gen/go"
+	"crypto_analyzer_auth_service/internal/infrastructure/logger"
+	"fmt"
+	"go.uber.org/zap"
+)
+
+func (c *Controller) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
+	log := logger.FromContext(ctx).With(zap.String("method", "login"))
+
+	log.Info("request started")
+
+	resp, err := c.service.Login(ctx, req)
+	if err != nil {
+		log.Error("login failed", zap.Error(err))
+		return nil, fmt.Errorf("login failed: %w", err)
+	}
+
+	log.Info("request ended")
+
+	return resp, nil
+}

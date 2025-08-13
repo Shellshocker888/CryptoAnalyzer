@@ -3,31 +3,54 @@ package storage
 import (
 	"context"
 	"crypto_analyzer_auth_service/internal/domain"
-	"crypto_analyzer_auth_service/internal/interfaces"
 	"database/sql"
 	"errors"
 	"fmt"
 	"time"
 )
 
-var _ interfaces.UsersStorage = (*UserPostgresStorage)(nil)
+const (
+	queryCreateUser = `
+		INSERT INTO users (uuid, username, email, password_hash, created_at)
+		VALUES ($1, $2, $3, $4, $5)
+	`
 
-type UserPostgresStorage struct {
-	DB *sql.DB
-}
+	queryGetUserByUsername = `
+		SELECT uuid, username, email, password_hash, created_at
+		FROM users
+		WHERE username = $1
+	`
 
-func NewUserStorage(db *sql.DB) (*UserPostgresStorage, error) {
-	return &UserPostgresStorage{DB: db}, nil
+	queryGetUserByEmail = `
+		SELECT uuid, username, email, password_hash, created_at
+		FROM users
+		WHERE email = $1
+	`
+
+	queryGetUserByID = `
+		SELECT username, email
+		FROM users
+		WHERE uuid = $1
+	`
+
+	queryCheckEmailExists = `
+		SELECT 1 FROM users WHERE email = $1 LIMIT 1
+	`
+)
+
+type UsersStorageInterface interface {
+	CreateUser(ctx context.Context, user *domain.User) error
+	GetUserByUsernameEmail(ctx context.Context, username, email string) (*domain.User, error)
+	GetUserByUserID(ctx context.Context, userID string) (*domain.User, error)
+	EmailExists(ctx context.Context, email string) (bool, error)
+	//UsernameExists(ctx context.Context, username string) (bool, error)
 }
 
 func (s *UserPostgresStorage) CreateUser(ctx context.Context, user *domain.User) error {
-	query := `INSERT INTO users (uuid, username, email, password_hash, created_at)
-VALUES ($1, $2, $3, $4, $5)`
-
 	if user.CreatedAt.IsZero() {
 		user.CreatedAt = time.Now()
 	}
-	_, err := s.DB.ExecContext(ctx, query, user.ID, user.Username, user.Email, user.PasswordHash, user.CreatedAt)
+	_, err := s.DB.ExecContext(ctx, queryCreateUser, user.ID, user.Username, user.Email, user.PasswordHash, user.CreatedAt)
 	if err != nil {
 		return fmt.Errorf("failed to create user: %w", err)
 	}
@@ -36,19 +59,20 @@ VALUES ($1, $2, $3, $4, $5)`
 }
 
 func (s *UserPostgresStorage) GetUserByUsernameEmail(ctx context.Context, username, email string) (*domain.User, error) {
-	var field, target string
+	var query string
+	var value string
 
 	if username != "" {
-		field = "username"
-		target = username
+		query = queryGetUserByUsername
+		value = username
 	} else if email != "" {
-		field = "email"
-		target = email
+		query = queryGetUserByEmail
+		value = email
+	} else {
+		return nil, fmt.Errorf("username or email must be provided")
 	}
 
-	query := fmt.Sprintf("SELECT uuid, username, email, password_hash, created_at FROM users WHERE %s = $1", field)
-
-	row := s.DB.QueryRowContext(ctx, query, target)
+	row := s.DB.QueryRowContext(ctx, query, value)
 
 	var user domain.User
 	err := row.Scan(
@@ -62,7 +86,6 @@ func (s *UserPostgresStorage) GetUserByUsernameEmail(ctx context.Context, userna
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
@@ -73,12 +96,10 @@ func (s *UserPostgresStorage) GetUserByUsernameEmail(ctx context.Context, userna
 func (s *UserPostgresStorage) GetUserByUserID(ctx context.Context, userID string) (*domain.User, error) {
 
 	if userID == "" {
-		return nil, errors.New("userID is empty")
+		return nil, fmt.Errorf("userID is empty")
 	}
 
-	query := `SELECT username, email FROM users WHERE uuid = $1`
-
-	row := s.DB.QueryRowContext(ctx, query, userID)
+	row := s.DB.QueryRowContext(ctx, queryGetUserByID, userID)
 
 	var user domain.User
 	err := row.Scan(
@@ -98,9 +119,7 @@ func (s *UserPostgresStorage) GetUserByUserID(ctx context.Context, userID string
 }
 
 func (s *UserPostgresStorage) EmailExists(ctx context.Context, email string) (bool, error) {
-	query := `SELECT 1 FROM users WHERE email = $1 LIMIT 1`
-
-	row := s.DB.QueryRowContext(ctx, query, email)
+	row := s.DB.QueryRowContext(ctx, queryCheckEmailExists, email)
 
 	var result int
 	err := row.Scan(&result)
@@ -110,7 +129,7 @@ func (s *UserPostgresStorage) EmailExists(ctx context.Context, email string) (bo
 	}
 
 	if err != nil {
-		return false, fmt.Errorf("failed to check user mail: %w", err)
+		return false, fmt.Errorf("failed to check user email: %w", err)
 	}
 
 	return true, nil

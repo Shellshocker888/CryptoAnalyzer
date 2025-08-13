@@ -1,17 +1,17 @@
 package service
 
 import (
-	"crypto_analyzer_auth_service/internal/interfaces"
+	"crypto_analyzer_auth_service/internal/storage"
 )
 
-type AuthService struct {
-	Storage    interfaces.UsersStorage
-	Session    interfaces.SessionManager
-	JWTManager interfaces.JWTManager
+type ControllerService struct {
+	Storage    storage.UsersStorageInterface
+	Session    storage.SessionManagerInterface
+	JWTManager storage.JWTManagerInterface
 }
 
-func NewService(storage interfaces.UsersStorage, session interfaces.SessionManager, JWTManager interfaces.JWTManager) *AuthService {
-	return &AuthService{
+func NewService(storage storage.UsersStorageInterface, session storage.SessionManagerInterface, JWTManager storage.JWTManagerInterface) *ControllerService {
+	return &ControllerService{
 		Storage:    storage,
 		Session:    session,
 		JWTManager: JWTManager,

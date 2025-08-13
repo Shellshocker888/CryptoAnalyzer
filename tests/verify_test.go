@@ -2,7 +2,7 @@ package tests
 
 import (
 	pb "crypto_analyzer_auth_service/gen/go"
-	"crypto_analyzer_auth_service/internal/errors_my"
+	"crypto_analyzer_auth_service/internal/domain"
 	"github.com/ozontech/allure-go/pkg/framework/provider"
 	"github.com/ozontech/allure-go/pkg/framework/runner"
 	"testing"
@@ -22,7 +22,7 @@ func TestVerifyValidAccessToken(tt *testing.T) {
 
 			cleanUserByEmail(ctx, tt, email, nil)
 
-			resp, err := authService.Register(ctx, registerRequest(username, email, password))
+			resp, err := controllerService.Register(ctx, registerRequest(username, email, password))
 
 			t.Cleanup(func() {
 				cleanUserByEmail(ctx, tt, email, resp)
@@ -67,7 +67,7 @@ func TestVerifyEmptyAccessToken(tt *testing.T) {
 
 			resp, err := verifyRequest("")
 
-			sCtx.Assert().ErrorIs(err, errors_my.ErrNoAccessToken)
+			sCtx.Assert().ErrorIs(err, domain.ErrNoAccessToken)
 			sCtx.Assert().Nil(resp, "Response nil")
 		})
 	})
@@ -79,9 +79,9 @@ func TestVerifyWithoutAccessToken(tt *testing.T) {
 	runner.Run(tt, "Verify without access token", func(t provider.T) {
 		t.WithNewStep("Verify without access token", func(sCtx provider.StepCtx) {
 
-			resp, err := authService.Verify(ctx, &pb.VerifyRequest{})
+			resp, err := controllerService.Verify(ctx, &pb.VerifyRequest{})
 
-			sCtx.Assert().ErrorIs(err, errors_my.ErrNoAccessToken)
+			sCtx.Assert().ErrorIs(err, domain.ErrNoAccessToken)
 			sCtx.Assert().Nil(resp, "Response nil")
 		})
 	})

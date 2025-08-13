@@ -2,7 +2,7 @@ package tests
 
 import (
 	"crypto_analyzer_auth_service/gen/go"
-	"crypto_analyzer_auth_service/internal/errors_my"
+	"crypto_analyzer_auth_service/internal/domain"
 	"github.com/ozontech/allure-go/pkg/framework/provider"
 	"github.com/ozontech/allure-go/pkg/framework/runner"
 	"testing"
@@ -19,13 +19,13 @@ func TestRegisterWeakPassword(tt *testing.T) {
 
 			cleanUserByEmail(ctx, tt, email, nil)
 
-			resp, err := authService.Register(ctx, registerRequest(username, email, password))
+			resp, err := controllerService.Register(ctx, registerRequest(username, email, password))
 
 			t.Cleanup(func() {
 				cleanUserByEmail(ctx, tt, email, resp)
 			})
 
-			sCtx.Assert().ErrorIs(err, errors_my.ErrWeakPassword)
+			sCtx.Assert().ErrorIs(err, domain.ErrWeakPassword)
 			sCtx.Assert().Nil(resp, "Response nil, регистрация не выполнена")
 		})
 	})
@@ -42,7 +42,7 @@ func TestRegisterStrongPasswordCorrectEmail(tt *testing.T) {
 
 			cleanUserByEmail(ctx, tt, email, nil)
 
-			resp, err := authService.Register(ctx, registerRequest(username, email, password))
+			resp, err := controllerService.Register(ctx, registerRequest(username, email, password))
 
 			t.Cleanup(func() {
 				cleanUserByEmail(ctx, tt, email, resp)
@@ -67,7 +67,7 @@ func TestRegisterEmailExists(tt *testing.T) {
 
 			cleanUserByEmail(ctx, tt, email, nil)
 
-			resp, err := authService.Register(ctx, registerRequest(username, email, password))
+			resp, err := controllerService.Register(ctx, registerRequest(username, email, password))
 
 			t.Cleanup(func() {
 				cleanUserByEmail(ctx, tt, email, resp)
@@ -83,7 +83,7 @@ func TestRegisterEmailExists(tt *testing.T) {
 			email := "newemail@gmail.com"
 			password := "New12321_new"
 
-			resp, err := authService.Register(ctx, registerRequest(username, email, password))
+			resp, err := controllerService.Register(ctx, registerRequest(username, email, password))
 
 			sCtx.Assert().Error(err, "Ошибка, email уже существует")
 			sCtx.Assert().Nil(resp, "Response nil, регистрация не выполнена")
@@ -102,13 +102,13 @@ func TestRegisterWrongEmail(tt *testing.T) {
 
 			cleanUserByEmail(ctx, tt, email, nil)
 
-			resp, err := authService.Register(ctx, registerRequest(username, email, password))
+			resp, err := controllerService.Register(ctx, registerRequest(username, email, password))
 
 			t.Cleanup(func() {
 				cleanUserByEmail(ctx, tt, email, resp)
 			})
 
-			sCtx.Assert().ErrorIs(err, errors_my.ErrWeakEmail)
+			sCtx.Assert().ErrorIs(err, domain.ErrWeakEmail)
 			sCtx.Assert().Nil(resp, "Response nil, регистрация не выполнена")
 		})
 	})
@@ -124,13 +124,13 @@ func TestRegisterNoUsername(tt *testing.T) {
 
 			cleanUserByEmail(ctx, tt, email, nil)
 
-			resp, err := authService.Register(ctx, registerRequest("", email, password))
+			resp, err := controllerService.Register(ctx, registerRequest("", email, password))
 
 			t.Cleanup(func() {
 				cleanUserByEmail(ctx, tt, email, resp)
 			})
 
-			sCtx.Assert().ErrorIs(err, errors_my.ErrNotEnoughData)
+			sCtx.Assert().ErrorIs(err, domain.ErrNotEnoughData)
 			sCtx.Assert().Nil(resp, "Response nil, регистрация не выполнена")
 		})
 	})
@@ -150,7 +150,7 @@ func TestRegisterNoEmail(tt *testing.T) {
 			}
 
 			var resp *auth.RegisterResponse
-			resp, err = authService.Register(ctx, registerRequest(username, "", password))
+			resp, err = controllerService.Register(ctx, registerRequest(username, "", password))
 
 			t.Cleanup(func() {
 				cleanUserByEmail(ctx, tt, "", resp)
@@ -172,7 +172,7 @@ func TestRegisterNoPassword(tt *testing.T) {
 
 			cleanUserByEmail(ctx, tt, email, nil)
 
-			resp, err := authService.Register(ctx, registerRequest(username, email, ""))
+			resp, err := controllerService.Register(ctx, registerRequest(username, email, ""))
 
 			t.Cleanup(func() {
 				cleanUserByEmail(ctx, tt, email, resp)

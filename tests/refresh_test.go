@@ -1,7 +1,7 @@
 package tests
 
 import (
-	"crypto_analyzer_auth_service/internal/errors_my"
+	"crypto_analyzer_auth_service/internal/domain"
 	"github.com/ozontech/allure-go/pkg/framework/provider"
 	"github.com/ozontech/allure-go/pkg/framework/runner"
 	"testing"
@@ -21,7 +21,7 @@ func TestRefreshValidRefreshToken(tt *testing.T) {
 
 			cleanUserByEmail(ctx, tt, email, nil)
 
-			resp, err := authService.Register(ctx, registerRequest(username, email, password))
+			resp, err := controllerService.Register(ctx, registerRequest(username, email, password))
 
 			t.Cleanup(func() {
 				cleanUserByEmail(ctx, tt, email, resp)
@@ -36,7 +36,7 @@ func TestRefreshValidRefreshToken(tt *testing.T) {
 		})
 
 		t.WithNewStep("Refresh with valid refresh token", func(sCtx provider.StepCtx) {
-			resp, err := authService.Refresh(ctx, refreshRequest(refreshToken))
+			resp, err := controllerService.Refresh(ctx, refreshRequest(refreshToken))
 
 			sCtx.Assert().NoError(err, "Отсутствие ошибки, refresh token valid")
 			sCtx.Assert().NotNil(resp, "Response не nil, refresh выполнен")
@@ -59,7 +59,7 @@ func TestRefreshInvalidRefreshToken(tt *testing.T) {
 
 			cleanUserByEmail(ctx, tt, email, nil)
 
-			resp, err := authService.Register(ctx, registerRequest(username, email, password))
+			resp, err := controllerService.Register(ctx, registerRequest(username, email, password))
 
 			t.Cleanup(func() {
 				cleanUserByEmail(ctx, tt, email, resp)
@@ -72,9 +72,9 @@ func TestRefreshInvalidRefreshToken(tt *testing.T) {
 		})
 
 		t.WithNewStep("Refresh with invalid refresh token", func(sCtx provider.StepCtx) {
-			resp, err := authService.Refresh(ctx, refreshRequest("invalidRefreshToken"))
+			resp, err := controllerService.Refresh(ctx, refreshRequest("invalidRefreshToken"))
 
-			sCtx.Assert().ErrorIs(err, errors_my.ErrRefreshFailed)
+			sCtx.Assert().ErrorIs(err, domain.ErrNoSuchRefreshToken)
 			sCtx.Assert().Nil(resp, "Response nil, refresh не выполнен")
 		})
 	})
@@ -93,7 +93,7 @@ func TestRefreshValidRefreshTokenWithoutUser(tt *testing.T) {
 
 			cleanUserByEmail(ctx, tt, email, nil)
 
-			resp, err := authService.Register(ctx, registerRequest(username, email, password))
+			resp, err := controllerService.Register(ctx, registerRequest(username, email, password))
 
 			refreshToken = resp.RefreshToken
 
@@ -106,9 +106,9 @@ func TestRefreshValidRefreshTokenWithoutUser(tt *testing.T) {
 		})
 
 		t.WithNewStep("Refresh with valid refresh token without user saved", func(sCtx provider.StepCtx) {
-			resp, err := authService.Refresh(ctx, refreshRequest(refreshToken))
+			resp, err := controllerService.Refresh(ctx, refreshRequest(refreshToken))
 
-			sCtx.Assert().ErrorIs(err, errors_my.ErrRefreshFailed)
+			sCtx.Assert().ErrorIs(err, domain.ErrNoSuchRefreshToken)
 			sCtx.Assert().Nil(resp, "Response nil, refresh не выполнен")
 		})
 	})
@@ -127,7 +127,7 @@ func TestRefreshOutdatedRefreshToken(tt *testing.T) {
 
 			cleanUserByEmail(ctx, tt, email, nil)
 
-			resp, err := authService.Register(ctx, registerRequest(username, email, password))
+			resp, err := controllerService.Register(ctx, registerRequest(username, email, password))
 
 			t.Cleanup(func() {
 				cleanUserByEmail(ctx, tt, email, resp)
@@ -144,9 +144,9 @@ func TestRefreshOutdatedRefreshToken(tt *testing.T) {
 		t.WithNewStep("Refresh with outdated refresh token", func(sCtx provider.StepCtx) {
 			time.Sleep(2 * time.Second)
 
-			resp, err := authService.Refresh(ctx, refreshRequest(refreshToken))
+			resp, err := controllerService.Refresh(ctx, refreshRequest(refreshToken))
 
-			sCtx.Assert().ErrorIs(err, errors_my.ErrRefreshFailed)
+			sCtx.Assert().ErrorIs(err, domain.ErrNoSuchRefreshToken)
 			sCtx.Assert().Nil(resp, "Response nil, refresh не выполнен")
 		})
 	})
@@ -164,7 +164,7 @@ func TestRefreshWithoutRefreshToken(tt *testing.T) {
 
 			cleanUserByEmail(ctx, tt, email, nil)
 
-			resp, err := authService.Register(ctx, registerRequest(username, email, password))
+			resp, err := controllerService.Register(ctx, registerRequest(username, email, password))
 
 			t.Cleanup(func() {
 				cleanUserByEmail(ctx, tt, email, resp)
@@ -177,9 +177,9 @@ func TestRefreshWithoutRefreshToken(tt *testing.T) {
 		})
 
 		t.WithNewStep("Refresh without refresh token", func(sCtx provider.StepCtx) {
-			resp, err := authService.Refresh(ctx, refreshRequest(""))
+			resp, err := controllerService.Refresh(ctx, refreshRequest(""))
 
-			sCtx.Assert().ErrorIs(err, errors_my.ErrRefreshFailed)
+			sCtx.Assert().ErrorIs(err, domain.ErrNoRefreshToken)
 			sCtx.Assert().Nil(resp, "Response nil, refresh не выполнен")
 		})
 	})

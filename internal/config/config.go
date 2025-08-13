@@ -1,35 +1,13 @@
 package config
 
 import (
+	"crypto_analyzer_auth_service/internal/config/model"
 	"fmt"
 	"github.com/joho/godotenv"
 	"os"
 	"strconv"
 	"time"
 )
-
-type PostgresConfig struct {
-	Host     string
-	Port     string
-	User     string
-	Password string
-	Name     string
-	SslMode  string
-}
-
-type RedisConfig struct {
-	Addr              string
-	Password          string
-	SessionDB         int
-	RefreshPrefix     string
-	RefreshExpiration time.Duration
-}
-
-type JWTConfig struct {
-	SecretKey         []byte
-	AccessTokenTTL    time.Duration
-	RefreshTokenBytes int
-}
 
 func getEnv(key string) (string, error) {
 	val := os.Getenv(key)
@@ -40,7 +18,7 @@ func getEnv(key string) (string, error) {
 	return val, nil
 }
 
-func LoadConfig() error {
+func LoadConfig() (*model.Config, error) {
 	env := ".env"
 
 	if os.Getenv("APP_ENV") == "test" {
@@ -49,129 +27,119 @@ func LoadConfig() error {
 
 	err := godotenv.Load(env)
 	if err != nil {
-		return fmt.Errorf("failed to load env: %w", err)
+		return nil, fmt.Errorf("failed to load env: %w", err)
 	}
 
-	return nil
-}
+	cfgPostgres := &model.PostgresConfig{}
 
-func LoadPostgresConfig() (*PostgresConfig, error) {
-	cfg := &PostgresConfig{}
-
-	var err error
-	cfg.Host, err = getEnv("DB_HOST")
+	cfgPostgres.Host, err = getEnv("DB_HOST")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load postgres config: %w", err)
 	}
 
-	cfg.Port, err = getEnv("DB_PORT")
+	cfgPostgres.Port, err = getEnv("DB_PORT")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load postgres config: %w", err)
 	}
 
-	cfg.User, err = getEnv("DB_USER")
+	cfgPostgres.User, err = getEnv("DB_USER")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load postgres config: %w", err)
 	}
 
-	cfg.Password, err = getEnv("DB_PASSWORD")
+	cfgPostgres.Password, err = getEnv("DB_PASSWORD")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load postgres config: %w", err)
 	}
 
-	cfg.Name, err = getEnv("DB_NAME")
+	cfgPostgres.Name, err = getEnv("DB_NAME")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load postgres config: %w", err)
 	}
 
-	cfg.SslMode, err = getEnv("DB_SSLMODE")
+	cfgPostgres.SslMode, err = getEnv("DB_SSLMODE")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load postgres config: %w", err)
 	}
 
-	return cfg, nil
-}
+	cfgRedis := &model.RedisConfig{}
 
-func LoadRedisConfig() (*RedisConfig, error) {
-	cfg := &RedisConfig{}
-
-	var err error
-	cfg.Addr, err = getEnv("REDIS_ADDR")
+	cfgRedis.Addr, err = getEnv("REDIS_ADDR")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load redis config: %w", err)
 	}
-	cfg.Password, err = getEnv("REDIS_PASSWORD")
+	cfgRedis.Password, err = getEnv("REDIS_PASSWORD")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load redis config: %w", err)
 	}
 
-	cfg.RefreshPrefix, err = getEnv("REDIS_REFRESH_PREFIX")
+	cfgRedis.RefreshPrefix, err = getEnv("REDIS_REFRESH_PREFIX")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load redis config: %w", err)
 	}
 
 	var refreshExpirationString string
 	refreshExpirationString, err = getEnv("REDIS_REFRESH_EXPIRATION")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load redis config: %w", err)
 	}
 
 	var refreshExpiration time.Duration
 	refreshExpiration, err = time.ParseDuration(refreshExpirationString)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load redis config: %w", err)
 	}
 
-	cfg.RefreshExpiration = refreshExpiration
+	cfgRedis.RefreshExpiration = refreshExpiration
 
 	var redisDBString string
 	redisDBString, err = getEnv("REDIS_DB")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load redis config: %w", err)
 	}
 
-	cfg.SessionDB, err = strconv.Atoi(redisDBString)
+	cfgRedis.SessionDB, err = strconv.Atoi(redisDBString)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load redis config: %w", err)
 	}
 
-	return cfg, nil
-}
-
-func LoadJWTConfig() (*JWTConfig, error) {
-	cfg := &JWTConfig{}
+	cfgJwt := &model.JwtConfig{}
 
 	secretKeyString, err := getEnv("JWT_SECRET_KEY")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load jwt config: %w", err)
 	}
 
-	cfg.SecretKey = []byte(secretKeyString)
+	cfgJwt.SecretKey = []byte(secretKeyString)
 
-	var accessTokenTTLString string
-	accessTokenTTLString, err = getEnv("JWT_ACCESS_TOKEN_TTL")
+	var accessTokenTtlString string
+	accessTokenTtlString, err = getEnv("JWT_ACCESS_TOKEN_TTL")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load jwt config: %w", err)
 	}
 
-	var accessTokenTTLDuration time.Duration
-	accessTokenTTLDuration, err = time.ParseDuration(accessTokenTTLString)
+	var accessTokenTtlDuration time.Duration
+	accessTokenTtlDuration, err = time.ParseDuration(accessTokenTtlString)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load jwt config: %w", err)
 	}
 
-	cfg.AccessTokenTTL = accessTokenTTLDuration
+	cfgJwt.AccessTokenTTL = accessTokenTtlDuration
 
 	var refreshTokenBytesString string
 	refreshTokenBytesString, err = getEnv("JWT_REFRESH_TOKEN_BYTES")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load jwt config: %w", err)
 	}
 
-	cfg.RefreshTokenBytes, err = strconv.Atoi(refreshTokenBytesString)
+	cfgJwt.RefreshTokenBytes, err = strconv.Atoi(refreshTokenBytesString)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load jwt config: %w", err)
 	}
 
-	return cfg, nil
+	return &model.Config{
+		PostgresCfg: cfgPostgres,
+		RedisCfg:    cfgRedis,
+		JwtCfg:      cfgJwt,
+	}, nil
 }

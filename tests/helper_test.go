@@ -46,6 +46,12 @@ func registerRequest(username, email, password string) *pb.RegisterRequest {
 	}
 }
 
+func logoutRequest(refreshToken string) *pb.LogoutRequest {
+	return &pb.LogoutRequest{
+		RefreshToken: refreshToken,
+	}
+}
+
 func refreshRequest(refreshToken string) *pb.RefreshRequest {
 	return &pb.RefreshRequest{RefreshToken: refreshToken}
 }
@@ -53,5 +59,5 @@ func refreshRequest(refreshToken string) *pb.RefreshRequest {
 func verifyRequest(accessToken string) (*auth.VerifyResponse, error) {
 	md := metadata.Pairs("authorization", accessToken)
 	ctx := metadata.NewIncomingContext(context.Background(), md)
-	return authService.Verify(ctx, &pb.VerifyRequest{})
+	return controllerService.Verify(ctx, &pb.VerifyRequest{})
 }

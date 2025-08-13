@@ -1,7 +1,7 @@
 package tests
 
 import (
-	"crypto_analyzer_auth_service/internal/errors_my"
+	"crypto_analyzer_auth_service/internal/domain"
 	"github.com/ozontech/allure-go/pkg/framework/provider"
 	"github.com/ozontech/allure-go/pkg/framework/runner"
 	"testing"
@@ -16,9 +16,9 @@ func TestLoginWeakPassword(tt *testing.T) {
 			email := "newemail@gmail.com"
 			password := "123123123"
 
-			resp, err := authService.Login(ctx, loginRequest(username, email, password))
+			resp, err := controllerService.Login(ctx, loginRequest(username, email, password))
 
-			sCtx.Assert().ErrorIs(err, errors_my.ErrWeakPassword)
+			sCtx.Assert().ErrorIs(err, domain.ErrWeakPassword)
 			sCtx.Assert().Nil(resp, "Response nil, вход не выполнен")
 		})
 	})
@@ -35,7 +35,7 @@ func TestLoginStrongPasswordCorrectEmail(tt *testing.T) {
 
 			cleanUserByEmail(ctx, tt, email, nil)
 
-			resp, err := authService.Register(ctx, registerRequest(username, email, password))
+			resp, err := controllerService.Register(ctx, registerRequest(username, email, password))
 
 			t.Cleanup(func() {
 				cleanUserByEmail(ctx, tt, email, resp)
@@ -52,7 +52,7 @@ func TestLoginStrongPasswordCorrectEmail(tt *testing.T) {
 			email := "newemail25@gmail.com"
 			password := "New12321_new"
 
-			resp, err := authService.Login(ctx, loginRequest(username, email, password))
+			resp, err := controllerService.Login(ctx, loginRequest(username, email, password))
 
 			sCtx.Assert().NoError(err, "Отсутствие ошибки при сильном пароле и корректном email")
 			sCtx.Assert().NotNil(resp, "Response не nil, вход выполнен")
@@ -71,9 +71,9 @@ func TestLoginWeakEmail(tt *testing.T) {
 			email := "newemailgmail.com"
 			password := "New12321_new"
 
-			resp, err := authService.Login(ctx, loginRequest(username, email, password))
+			resp, err := controllerService.Login(ctx, loginRequest(username, email, password))
 
-			sCtx.Assert().ErrorIs(err, errors_my.ErrWeakEmail)
+			sCtx.Assert().ErrorIs(err, domain.ErrWeakEmail)
 			sCtx.Assert().Nil(resp, "Response nil, вход не выполнен")
 		})
 	})
@@ -90,7 +90,7 @@ func TestLoginNoUsernameValidEmail(tt *testing.T) {
 
 			cleanUserByEmail(ctx, tt, email, nil)
 
-			resp, err := authService.Register(ctx, registerRequest(username, email, password))
+			resp, err := controllerService.Register(ctx, registerRequest(username, email, password))
 
 			t.Cleanup(func() {
 				cleanUserByEmail(ctx, tt, email, resp)
@@ -107,7 +107,7 @@ func TestLoginNoUsernameValidEmail(tt *testing.T) {
 			email := "newemail25@gmail.com"
 			password := "New12321_new"
 
-			resp, err := authService.Login(ctx, loginRequest(username, email, password))
+			resp, err := controllerService.Login(ctx, loginRequest(username, email, password))
 
 			sCtx.Assert().NoError(err, "Отсутствие ошибки при наличии email")
 			sCtx.Assert().NotNil(resp, "Response не nil, вход выполнен")
@@ -128,7 +128,7 @@ func TestLoginNoEmailValidUsername(tt *testing.T) {
 
 			cleanUserByEmail(ctx, tt, email, nil)
 
-			resp, err := authService.Register(ctx, registerRequest(username, email, password))
+			resp, err := controllerService.Register(ctx, registerRequest(username, email, password))
 
 			t.Cleanup(func() {
 				cleanUserByEmail(ctx, tt, email, resp)
@@ -145,7 +145,7 @@ func TestLoginNoEmailValidUsername(tt *testing.T) {
 			email := ""
 			password := "New12321_new"
 
-			resp, err := authService.Login(ctx, loginRequest(username, email, password))
+			resp, err := controllerService.Login(ctx, loginRequest(username, email, password))
 
 			sCtx.Assert().NoError(err, "Отсутствие ошибки при наличии email")
 			sCtx.Assert().NotNil(resp, "Response не nil, вход выполнен")
@@ -163,9 +163,9 @@ func TestLoginNoPassword(tt *testing.T) {
 			username := "Shellshocker"
 			email := "newemail@gmail.com"
 
-			resp, err := authService.Login(ctx, loginRequest(username, email, ""))
+			resp, err := controllerService.Login(ctx, loginRequest(username, email, ""))
 
-			sCtx.Assert().ErrorIs(err, errors_my.ErrNotEnoughData)
+			sCtx.Assert().ErrorIs(err, domain.ErrNotEnoughData)
 			sCtx.Assert().Nil(resp, "Response nil, вход не выполнен")
 		})
 	})
@@ -182,7 +182,7 @@ func TestLoginNoEmailInvalidUsername(tt *testing.T) {
 
 			cleanUserByEmail(ctx, tt, email, nil)
 
-			resp, err := authService.Register(ctx, registerRequest(username, email, password))
+			resp, err := controllerService.Register(ctx, registerRequest(username, email, password))
 
 			t.Cleanup(func() {
 				cleanUserByEmail(ctx, tt, email, resp)
@@ -199,9 +199,9 @@ func TestLoginNoEmailInvalidUsername(tt *testing.T) {
 			email := ""
 			password := "New12321_new"
 
-			resp, err := authService.Login(ctx, loginRequest(username, email, password))
+			resp, err := controllerService.Login(ctx, loginRequest(username, email, password))
 
-			sCtx.Assert().ErrorIs(err, errors_my.ErrInvCredentials)
+			sCtx.Assert().ErrorIs(err, domain.ErrNilUser)
 			sCtx.Assert().Nil(resp, "Response nil, вход не выполнен")
 		})
 	})
@@ -218,7 +218,7 @@ func TestLoginNoUsernameInvalidEmail(tt *testing.T) {
 
 			cleanUserByEmail(ctx, tt, email, nil)
 
-			resp, err := authService.Register(ctx, registerRequest(username, email, password))
+			resp, err := controllerService.Register(ctx, registerRequest(username, email, password))
 
 			t.Cleanup(func() {
 				cleanUserByEmail(ctx, tt, email, resp)
@@ -235,9 +235,9 @@ func TestLoginNoUsernameInvalidEmail(tt *testing.T) {
 			email := "123qwe@gmail.com"
 			password := "New12321_new"
 
-			resp, err := authService.Login(ctx, loginRequest(username, email, password))
+			resp, err := controllerService.Login(ctx, loginRequest(username, email, password))
 
-			sCtx.Assert().ErrorIs(err, errors_my.ErrInvCredentials)
+			sCtx.Assert().ErrorIs(err, domain.ErrNilUser)
 			sCtx.Assert().Nil(resp, "Response nil, вход не выполнен")
 		})
 	})

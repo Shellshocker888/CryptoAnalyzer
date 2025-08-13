@@ -1,7 +1,9 @@
 package logger
 
 import (
+	"context"
 	"fmt"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -47,4 +49,34 @@ func InitTestLogger() error {
 	Log = logger
 
 	return nil
+}
+
+type ctxLoggerKey struct{}
+
+func WithLogger(ctx context.Context, l *zap.Logger) context.Context {
+	return context.WithValue(ctx, ctxLoggerKey{}, l)
+}
+
+func FromContext(ctx context.Context) *zap.Logger {
+	if ctx == nil {
+		return Log
+	}
+	if l, ok := ctx.Value(ctxLoggerKey{}).(*zap.Logger); ok && l != nil {
+		return l
+	}
+
+	return Log
+}
+
+func WithTraceID(ctx context.Context, l *zap.Logger) *zap.Logger {
+	if l == nil {
+		return l
+	}
+
+	sc := trace.SpanContextFromContext(ctx)
+	if sc.TraceID().IsValid() {
+		return l.With(zap.String("traceID", sc.TraceID().String()))
+	}
+
+	return l
 }

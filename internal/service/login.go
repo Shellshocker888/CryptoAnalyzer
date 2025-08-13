@@ -3,62 +3,69 @@ package service
 import (
 	"context"
 	auth "crypto_analyzer_auth_service/gen/go"
-	errors2 "crypto_analyzer_auth_service/internal/errors_my"
-	"crypto_analyzer_auth_service/internal/logger"
-	"errors"
+	"crypto_analyzer_auth_service/internal/domain"
+	"crypto_analyzer_auth_service/internal/infrastructure/logger"
+	"fmt"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func (s *AuthService) Login(ctx context.Context, req *auth.LoginRequest) (*auth.LoginResponse, error) {
+func (s *ControllerService) Login(ctx context.Context, req *auth.LoginRequest) (*auth.LoginResponse, error) {
+	log := logger.FromContext(ctx)
+
 	username := req.Username
 	email := req.Email
 	password := req.Password
 
 	if username == "" && email == "" || password == "" {
-		return nil, errors2.ErrNotEnoughData
+		log.Warn("not enough data to login", zap.Error(domain.ErrNotEnoughData))
+		return nil, domain.ErrNotEnoughData
 	}
 	if email != "" {
 		if !isValidEmail(req.Email) {
-			return nil, errors2.ErrWeakEmail
+			log.Warn("invalid email format", zap.Error(domain.ErrWeakEmail))
+			return nil, domain.ErrWeakEmail
 		}
 	}
 	if !isValidPassword(req.Password) {
-		return nil, errors2.ErrWeakPassword
+		log.Warn("invalid password format", zap.Error(domain.ErrWeakPassword))
+		return nil, domain.ErrWeakPassword
 	}
 
 	user, err := s.Storage.GetUserByUsernameEmail(ctx, username, email)
 	if err != nil {
-		logger.Log.Error("failed to get user by username/email", zap.Error(err))
-		return nil, errors2.ErrInvCredentials
+		log.Error("failed to get user by username/email", zap.Error(err))
+		return nil, fmt.Errorf("failed to get user by username/email: %w", err)
 	}
 	if user == nil {
-		return nil, errors2.ErrInvCredentials
+		log.Error("nil user", zap.Error(domain.ErrNilUser))
+		return nil, domain.ErrNilUser
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
 	if err != nil {
-		return nil, errors2.ErrInvCredentials
+		log.Error("failed to compare hash and password", zap.Error(err))
+		return nil, fmt.Errorf("failed to compare hash and password: %w", err)
 	}
 
 	var accessToken string
 	accessToken, err = s.JWTManager.GenerateAccessToken(user.ID, username, email)
 	if err != nil {
-		logger.Log.Error("failed to generate access token", zap.Error(err))
-		return nil, errors.New("failed to login user")
+		log.Error("failed to generate access token", zap.Error(err))
+		return nil, fmt.Errorf("failed to generate access token: %w", err)
 	}
 
 	var refreshToken string
 	refreshToken, err = s.JWTManager.GenerateRefreshToken()
 	if err != nil {
-		logger.Log.Error("failed to generate refresh token", zap.Error(err))
-		return nil, errors.New("failed to login user")
+		log.Error("failed to generate refresh token", zap.Error(err))
+		return nil, fmt.Errorf("failed to generate refresh token: %w", err)
 	}
 
 	err = s.Session.SaveRefreshToken(ctx, user.ID, refreshToken)
 	if err != nil {
-		logger.Log.Error("failed to save refresh token", zap.Error(err))
-		return nil, errors.New("failed to login user")
+		log.Error("failed to save refresh token", zap.Error(err))
+		return nil, fmt.Errorf("failed to save refresh token: %w", err)
 	}
 
 	return &auth.LoginResponse{

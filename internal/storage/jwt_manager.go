@@ -2,30 +2,17 @@ package storage
 
 import (
 	"crypto/rand"
-	"crypto_analyzer_auth_service/internal/config"
 	"crypto_analyzer_auth_service/internal/domain"
-	"crypto_analyzer_auth_service/internal/errors_my"
-	"crypto_analyzer_auth_service/internal/interfaces"
 	"encoding/base64"
-	"errors"
+	"fmt"
 	"github.com/golang-jwt/jwt/v5"
 	"time"
 )
 
-var _ interfaces.JWTManager = (*JWTManager)(nil)
-
-type JWTManager struct {
-	secretKey         []byte
-	accessTokenTTL    time.Duration
-	refreshTokenBytes int
-}
-
-func NewJWTManager(cfg *config.JWTConfig) *JWTManager {
-	return &JWTManager{
-		secretKey:         cfg.SecretKey,
-		accessTokenTTL:    cfg.AccessTokenTTL,
-		refreshTokenBytes: cfg.RefreshTokenBytes,
-	}
+type JWTManagerInterface interface {
+	GenerateAccessToken(userID, username, email string) (string, error)
+	GenerateRefreshToken() (string, error)
+	ParseAccessToken(tokenStr string) (*domain.User, error) // возвращает userID
 }
 
 func (j *JWTManager) GenerateAccessToken(userID, username, email string) (string, error) {
@@ -38,14 +25,20 @@ func (j *JWTManager) GenerateAccessToken(userID, username, email string) (string
 	}
 
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return accessToken.SignedString(j.secretKey)
+
+	accessTokenSigned, err := accessToken.SignedString(j.secretKey)
+	if err != nil {
+		return "", fmt.Errorf("error to generate access token: %w", err)
+	}
+
+	return accessTokenSigned, nil
 }
 
 func (j *JWTManager) GenerateRefreshToken() (string, error) {
 	byteSlice := make([]byte, j.refreshTokenBytes)
 	_, err := rand.Read(byteSlice)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error to generate refresh token: %w", err)
 	}
 
 	return base64.URLEncoding.EncodeToString(byteSlice), nil
@@ -54,36 +47,40 @@ func (j *JWTManager) GenerateRefreshToken() (string, error) {
 func (j *JWTManager) ParseAccessToken(tokenStr string) (*domain.User, error) {
 	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors.New("unexpected signing method")
+			return nil, fmt.Errorf("unexpected signing method")
 		}
 		return j.secretKey, nil
 	})
 
-	if err != nil || !token.Valid {
-		return nil, errors_my.ErrInvalidAccessToken
+	if err != nil {
+		return nil, fmt.Errorf("error to parse access token: %w", err)
+	}
+
+	if !token.Valid {
+		return nil, domain.ErrInvalidAccessToken
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return nil, errors.New("invalid claims")
+		return nil, fmt.Errorf("invalid claims")
 	}
 
 	var userID string
 	userID, ok = claims["user_id"].(string)
 	if !ok {
-		return nil, errors.New("user_id is not found in access token")
+		return nil, fmt.Errorf("user_id has been not found in access token")
 	}
 
 	var username string
 	username, ok = claims["username"].(string)
 	if !ok {
-		return nil, errors.New("username is not found in access token")
+		return nil, fmt.Errorf("username has been not found in access token")
 	}
 
 	var email string
 	email, ok = claims["email"].(string)
 	if !ok {
-		return nil, errors.New("email is not found in access token")
+		return nil, fmt.Errorf("email has been not found in access token")
 	}
 
 	user := &domain.User{
