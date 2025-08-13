@@ -58,8 +58,9 @@ Crypto Analyzer Auth Service — высокопроизводительный и
 
 
 ## API Reference
-
+````
 gRPC методы (AuthService):
+
 Register	Регистрация пользователя, получение токенов
 Login	Аутентификация, получение токенов
 Refresh	Обновление access токена и refresh токена через refresh токен
@@ -67,7 +68,7 @@ Verify	Верификация валидности access токена и пол
 Logout	Выход и удаление refresh токена
 
 Все методы используют контекст с trace-id и логированием.
-
+````
 
 ## Architecture
 
