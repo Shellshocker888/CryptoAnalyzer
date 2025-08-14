@@ -2,23 +2,23 @@ version: '3'
 
 tasks:
   # === Инфраструктура ===
-  up-infra:
+  infra-up:
     desc: "Поднять инфраструктуру"
     cmds:
       - docker-compose up -d
 
-  down-infra:
+  infra-down:
     desc: "Остановить и удалить контейнеры инфраструктуры"
     cmds:
       - docker-compose down -v
 
   # === Инфраструктура для тестирования ===
-  up-infra-test:
+  infra-test-up:
     desc: "Поднять инфраструктуру для тестов"
     cmds:
       - docker-compose -f docker-compose.test.yml up -d
 
-  down-infra-test:
+  infra-test-down:
     desc: "Остановить тестовую инфраструктуру"
     cmds:
       - docker-compose -f docker-compose.test.yml down -v
