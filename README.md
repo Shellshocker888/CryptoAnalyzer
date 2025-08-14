@@ -32,7 +32,7 @@ Crypto Analyzer Auth Service — высокопроизводительный и
 │ ├── config/ # Конфигурация
 │ ├── controller/ # GRPC контроллеры
 │ ├── domain/ # Сущности и бизнес-ошибки
-│ ├── infrastructure/ # Логгер, клиенты БД/редис, JWT
+│ ├── infrastructure/ # Логгер, клиенты БД, редис, JWT
 │ ├── service/ # Бизнес-логика
 │ └──  storage/ # Реализация доступа к БД, Redis, JWT
 ├── logs/ # Логи

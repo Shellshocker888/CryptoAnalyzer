@@ -4,7 +4,6 @@ import (
 	"context"
 	pb "crypto_analyzer_auth_service/gen/go"
 	"crypto_analyzer_auth_service/internal/config"
-	"crypto_analyzer_auth_service/internal/config/model"
 	"crypto_analyzer_auth_service/internal/controller"
 	grpc2 "crypto_analyzer_auth_service/internal/infrastructure/grpc"
 	"crypto_analyzer_auth_service/internal/infrastructure/logger"
@@ -12,10 +11,8 @@ import (
 	redisInit "crypto_analyzer_auth_service/internal/infrastructure/redis"
 	"crypto_analyzer_auth_service/internal/service"
 	"crypto_analyzer_auth_service/internal/storage"
-	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"log"
@@ -33,35 +30,27 @@ func Start(ctx context.Context) error {
 
 	ctx = logger.WithLogger(ctx, logger.Log)
 
-	var configMain *model.Config
-	if configMain, err = config.LoadConfig(); err != nil {
+	configMain, err := config.LoadConfig()
+	if err != nil {
 		logger.Log.Error("failed to load config", zap.Error(err))
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
-	var DB *sql.DB
-	DB, err = postgres.InitPostgres(ctx, configMain.PostgresCfg)
+	DB, err := postgres.InitPostgres(ctx, configMain.PostgresCfg)
 	if err != nil {
 		logger.Log.Error("failed to init postgres DB", zap.Error(err))
 		return fmt.Errorf("failed to init postgres DB: %w", err)
 	}
 	defer DB.Close()
 
-	var redisClient *redis.Client
-	redisClient, err = redisInit.InitRedisClient(ctx, configMain.RedisCfg)
+	redisClient, err := redisInit.InitRedisClient(ctx, configMain.RedisCfg)
 	if err != nil {
 		logger.Log.Error("failed to init redis client", zap.Error(err))
 		return fmt.Errorf("failed to init redis client: %w", err)
 	}
 	defer redisClient.Close()
 
-	var userStorage *storage.UserPostgresStorage
-	userStorage, err = storage.NewUserStorage(DB)
-	if err != nil {
-		logger.Log.Error("failed to init user storage", zap.Error(err))
-		return fmt.Errorf("failed to init user storage: %w", err)
-	}
-
+	userStorage := storage.NewUserStorage(DB)
 	userSessionManager := storage.NewSessionManager(configMain.RedisCfg, redisClient)
 	userJWTManager := storage.NewJWTManager(configMain.JwtCfg)
 

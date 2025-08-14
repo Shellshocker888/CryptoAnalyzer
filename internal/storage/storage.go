@@ -29,7 +29,7 @@ type UserPostgresStorage struct {
 	DB *sql.DB
 }
 
-func NewJWTManager(cfg *model.JwtConfig) *JWTManager {
+func NewJWTManager(cfg *model.JwtConfig) JWTManagerInterface {
 	return &JWTManager{
 		secretKey:         cfg.SecretKey,
 		accessTokenTTL:    cfg.AccessTokenTTL,
@@ -37,7 +37,7 @@ func NewJWTManager(cfg *model.JwtConfig) *JWTManager {
 	}
 }
 
-func NewSessionManager(cfg *model.RedisConfig, client *redis.Client) *SessionManager {
+func NewSessionManager(cfg *model.RedisConfig, client *redis.Client) SessionManagerInterface {
 
 	return &SessionManager{
 		client:     client,
@@ -46,6 +46,6 @@ func NewSessionManager(cfg *model.RedisConfig, client *redis.Client) *SessionMan
 	}
 }
 
-func NewUserStorage(db *sql.DB) (*UserPostgresStorage, error) {
-	return &UserPostgresStorage{DB: db}, nil
+func NewUserStorage(db *sql.DB) UsersStorageInterface {
+	return &UserPostgresStorage{DB: db}
 }
